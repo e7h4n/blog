@@ -104,3 +104,8 @@ deploy:
   repo: git@github.com:perfectworks/perfectworks.github.com.git
   type: github
   brandh: master
+
+feed:
+    type: atom
+    path: atom.xml
+    limit: 20
