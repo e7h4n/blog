@@ -1,6 +1,6 @@
 title: "Mustache.js/Hogan.js 模板预编译"
 date: 2012-08-30 16:18
-tags: [Frontend, Mustache, Hogan]
+tags: [mustache]
 ---
 
 [mustache.js](https://github.com/janl/mustache.js) 是[粉笔网](http://fenbi.com)用的一个开源前端模板引擎，无逻辑的设计，简单好用，性能也不错。

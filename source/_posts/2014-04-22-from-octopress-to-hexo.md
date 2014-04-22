@@ -1,6 +1,6 @@
 title: 把 blog 从 octopress 迁移到 hexo
 date: 2014-04-22 21:39:27
-tags: [octopress, hexo, node]
+tags: [hexo]
 ---
 
 之前用的一直用 [octopress] 来写 blog。对于我来说 octopress 有个最大的缺点，就是它是 ruby 写的。导致我经常就要去搞搞 ruby 的版本啊、gem 啊什么杂七杂八的事情。今天无意间看到了一个 node 写的博客工具 [hexo]，功能类似于 octorepss 但是部署成本比 octopress 低了不少，于是花了 15 分钟把整个博客从 octopress 迁移到了 hexo 上面。

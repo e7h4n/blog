@@ -1,6 +1,6 @@
 title: 异步、promise 与缓存
 date: 2014-04-21 22:01
-tags: [nodejs, promise]
+tags: [node]
 ---
 
 ## 异步操作缓存

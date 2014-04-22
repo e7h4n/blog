@@ -27,6 +27,9 @@
       <% if (post.comments && config.disqus_shortname){ %>
         <a href="<%- post.permalink %>#disqus_thread" class="article-comment-link">Comments</a>
       <% } %>
+      <% if (post.comments && config.duoshuo_shortname){ %>
+        <a href="<%- post.permalink %>#comments" class="article-comment-link">Comments</a>
+      <% } %>
       <%- partial('post/tag') %>
     </footer>
   </div>
@@ -40,5 +43,10 @@
   <div id="disqus_thread">
     <noscript>Please enable JavaScript to view the <a href="//disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
   </div>
+</section>
+<% } %>
+<% if (!index && post.comments && config.duoshuo_shortname){ %>
+<section id="comments">
+  <div class="ds-thread" data-thread-key="<%- post._id %>" data-title="<%- post.title %>" data-url="<%- post.link %>"></div>
 </section>
 <% } %>
