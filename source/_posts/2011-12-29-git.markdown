@@ -1,0 +1,13 @@
+---
+layout: post
+title: "Git 零基础介绍"
+date: 2011-12-29 15:43
+comments: true
+categories: Git
+---
+
+Git 是一个由 Linus 为了更好地管理 Linux 内核而创立的分布式版本控制软件。其设计思想与实现原理都与传统的版本控制工具如 svn 等有较大差异。分布式的模型带来了更快的操作速度，更好的开发模式。
+
+这是一次公司内分享的 slide，从 Git 的八卦历史开始讲起，介绍了 Git 的基本原理和命令。
+
+<div id="__ss_11729683"><object id="__sse11729683" width="425" height="355"><param name="movie" value="http://static.slidesharecdn.com/swf/ssplayer2.swf?doc=git-120224013548-phpapp01&stripped_title=git-11729683&userName=perfectworks" /><param name="allowFullScreen" value="true"/><param name="allowScriptAccess" value="always"/><param name="wmode" value="transparent"/><embed name="__sse11729683" src="http://static.slidesharecdn.com/swf/ssplayer2.swf?doc=git-120224013548-phpapp01&stripped_title=git-11729683&userName=perfectworks" type="application/x-shockwave-flash" allowscriptaccess="always" allowfullscreen="true" wmode="transparent" width="425" height="355"></embed></object></div>
