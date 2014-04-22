@@ -1,9 +1,6 @@
----
-layout: post
 title: "用 node.js 做 Web 前端服务器的一些经验"
 date: 2013-10-16 20:13
-comments: true
-categories: nodejs, frontend
+tags: [nodejs, frontend]
 ---
 
 前不久 NCZ 发表了新文章 [Node.js and the new web front-end]（[译文]），描述了用 node.js 做 Web 前端服务器的种种优势。NCZ 在文章中推荐了一套服务器模型(图片来源自[Node.js and the new web front-end])。

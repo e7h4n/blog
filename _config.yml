@@ -4,8 +4,8 @@
 
 # Site
 title: Lost JavaScript
-subtitle:
-description: 一个 Pure JavaScript 工程师的博客
+subtitle: 一个 Pure JavaScript 工程师的博客
+description: 
 author: Ethan (pw) Zhang
 email: perfectworks@gmail.com
 language: zh-CN
@@ -50,7 +50,7 @@ tag_map:
 ## 1: Disable pagination
 ## 0: Fully Disable
 archive: 2
-category: 2
+category: 0
 tag: 2
 
 # Server

@@ -1,9 +1,6 @@
----
-layout: post
-title: "Mac 下使用代理连接 docker 镜像服务器"
+title: Mac 下使用代理连接 docker 镜像服务器
 date: 2014-02-26 11:16
-comments: true
-categories: docker, GFW, proxy, 代理
+tags: [docker, GFW, proxy, 代理]
 ---
 
 Docker 是个非常牛逼的轻量级虚拟化解决方案，它可以将整个操作系统打成一个非常小的镜像，并且直接跑在宿主的 Linux Kernel 之上。然而在国内因为可恶的 GFW 存在，使用 docker 成了一件非常困难的事情。具体表现在使用 `docker search` 和 `docker pull` 的时候连接非常不稳定，这一刻我又深深的感觉到了作为一名天朝程序员的悲哀...

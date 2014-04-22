@@ -1,9 +1,6 @@
----
-layout: post
 title: "Node 出现 uncaughtException 之后的优雅退出方案"
 date: 2014-01-25 12:18
-comments: true
-categories: Node
+tags: [Node]
 ---
 
 Node 的异步特性是它最大的魅力，但是在带来便利的同时也带来了不少麻烦和坑，错误捕获就是一个。由于 Node 的异步特性，导致我们无法使用 try/catch 来捕获回调函数中的异常，例如:

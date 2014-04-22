@@ -1,9 +1,6 @@
----
-layout: post
-title: "异步、promise 与缓存"
+title: 异步、promise 与缓存
 date: 2014-04-21 22:01
-comments: true
-categories: nodejs, promise
+tags: [nodejs, promise]
 ---
 
 ## 异步操作缓存

@@ -1,9 +1,6 @@
----
-layout: post
 title: "教程：使用 pathogen + git 管理 Vim 插件"
 date: 2012-02-04 02:40
-comments: true
-categories: [Vim, Git]
+tags: [Vim, Git]
 ---
 
 Vim 用了很多年，一开始我是把所有插件直接扔到 .vim 目录下。时间长了以后，.vim 下面有好多零碎的文件，分不清哪个属于哪个插件，删除和升级插件都很困难。相信很多 Vimer 也遇到了这个问题。

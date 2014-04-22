@@ -1,10 +1,6 @@
----
-layout: post
 title: "setInterval 倒计时陷阱"
 date: 2013-07-20 15:03
-comments: true
-external-url: 
-categories: javascript, frontend
+tags: [javascript, frontend]
 ---
 
 最近发现页面上的一个倒计时功能出现了比较大的误差，debug 之后发现误差是由于 `setInterval` 不能实现准确执行任务导致的，例如下面这个例子：

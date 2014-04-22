@@ -1,10 +1,6 @@
----
-layout: post
 title: "Grunt -- 最好的前端构建框架"
 date: 2012-12-08 11:21
-comments: true
-external-url: 
-categories: [frontend, javascript, grunt]
+tags: [frontend, javascript, grunt]
 ---
 
 每个前端开发工程师都会遇到前端文件打包、压缩的问题。
