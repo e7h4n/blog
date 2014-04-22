@@ -21,6 +21,8 @@ function anonymous(c, r) {
 
 大规模应用时，模板的编译过程会花掉整个 render 过程中 30% 左右的时间。
 
+<!-- more -->
+
 ## 使用 Hogan.js 预编译 Mustache 模板
 
 Mustache 模板的这个问题已经被不少人遇到，也有很多解决办法。比如 twitter 发布的 [Hogan.js](http://twitter.github.com/hogan.js)。Hogan.js 是 Mustache 模板引擎的另一套实现，增加了预编译机制，使得模板字符串可以在打包阶段被预先处理成模板函数，这样浏览器就不必再重复去编译模板。

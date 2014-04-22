@@ -21,6 +21,8 @@ cssmin main.css
 
 后来随着项目规模的逐渐增大，shell 脚本逐渐暴露出了很多问题，比如：
 
+<!-- more -->
+
 * 不能自动下载依赖的外部命令，比如 yuicompressor/cssmin
 * 缺乏变量替换功能
 * 难以跨平台

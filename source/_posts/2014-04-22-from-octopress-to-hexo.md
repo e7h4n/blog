@@ -13,6 +13,7 @@ tags: [octopress, hexo, node]
 # 国内网速慢可以尝试加上 --registry=http://r.cnpmjs.org 来使用国内镜像加速
 npm install -g hexo
 ```
+<!-- more -->
 
 ### 初始化目录
 
