@@ -149,6 +149,27 @@
     &:hover
       color: color-default
 
+.article-sign
+  clearfix()
+  font-size: 1em
+  margin: 0 article-padding article-padding
+  a
+    color: color-grey
+    text-decoration: none
+    &:hover
+      color: color-default
+  img
+    float: left
+    margin-right: 10px
+  .content
+    float: left
+  .bullet:before
+    content: "\2022 "
+    padding: 0 .4em 0 .2em
+    display: inline-block
+  .license
+    margin-top: 6px
+
 .article-tag-list-item
   float: left
   margin-right: 10px

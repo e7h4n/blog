@@ -33,8 +33,6 @@ function readFile(callback) {
 
 这是个非常简单的缓存应用案例，我们可以将代码中的缓存逻辑抽出来，与业务逻辑分离，成为一个通用的缓存方法 `cacheAsync`:
 
-<!-- more -->
-
 ```javascript
 function cacheAsync(logical) {
     var cache = null;

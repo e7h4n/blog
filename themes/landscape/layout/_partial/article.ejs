@@ -20,15 +20,29 @@
         <% } %>
       <% } else { %>
         <%- post.content %>
+        <p>- FIN -</p>
       <% } %>
     </div>
+    <% if (!index) { %>
+      <footer class="article-sign">
+        <div class="author">
+          <img src="http://www.gravatar.com/avatar/c14b9141b9e07f405833634d348b8b01?s=48" alt="author">
+          <div class="content">
+            Posted By 张宇辰 <time class="bullet" datetime="<%= date_xml(post.date) %>" itemprop="datePublished"><%= date(post.date, null) %></time>
+            <p class="license">
+            原创文章<span class="bullet">版权声明：自由转载-非商用-非衍生-保持署名</span><a class="bullet" href="http://creativecommons.org/licenses/by-nc-nd/3.0/deed.zh" rel="nofollow" target="_blank">Creative Commons BY-NC-ND 3.0</a>
+            </p>
+          </div>
+        </div>
+      </footer>
+    <% } %>
     <footer class="article-footer">
-      <a data-url="<%- post.permalink %>" data-id="<%= post._id %>" class="article-share-link">Share</a>
+      <a data-url="<%- post.permalink %>" data-id="<%= post._id %>" class="article-share-link">分享</a>
       <% if (post.comments && config.disqus_shortname){ %>
-        <a href="<%- post.permalink %>#disqus_thread" class="article-comment-link">Comments</a>
+        <a href="<%- post.permalink %>#disqus_thread" class="article-comment-link">评论</a>
       <% } %>
       <% if (post.comments && config.duoshuo_shortname){ %>
-        <a href="<%- post.permalink %>#comments" class="article-comment-link">Comments</a>
+        <a href="<%- post.permalink %>#comments" class="article-comment-link">评论</a>
       <% } %>
       <%- partial('post/tag') %>
     </footer>
