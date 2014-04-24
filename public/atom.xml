@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <feed xmlns="http://www.w3.org/2005/Atom">
   <title><![CDATA[Lost JavaScript]]></title>
-  <subtitle><![CDATA[blog of pw]]></subtitle>
+  <subtitle><![CDATA[天赋即兴趣 兴趣即天赋]]></subtitle>
   <link href="/atom.xml" rel="self"/>
   <link href="http://lostjs.com/"/>
-  <updated>2014-04-24T15:29:08.878Z</updated>
+  <updated>2014-04-24T15:32:57.753Z</updated>
   <id>http://lostjs.com/</id>
   
   <author>
-    <name><![CDATA[Ethan (pw) Zhang]]></name>
+    <name><![CDATA[张宇辰 (pw)]]></name>
     <email><![CDATA[perfectworks@gmail.com]]></email>
   </author>
   
