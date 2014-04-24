@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>Mac 下使用代理连接 docker 镜像服务器 | Lost JavaScript</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta content="article" property="og:type">
+<meta content="Mac 下使用代理连接 docker 镜像服务器" property="og:title">
+<meta content="http://lostjs.com/2014/02/26/docker-behind-gfw/" property="og:url">
+<meta property="og:image">
+<meta content="Lost JavaScript" property="og:site_name">
+<meta content="Docker 是个非常牛逼的轻量级虚拟化解决方案，它可以将整个操作系统打成一个非常小的镜像，并且直接跑在宿主的 Linux Kernel 之上。然而在国内因为可恶的 GFW 存在，使用 docker 成了一件非常困难的事情。具体表现在使用 docker search 和 docker pull 的时候连接非常不稳定，这一刻我又深深的感觉到了作为一名天朝程序员的悲哀…
+使用 HTTP 代理连接 do" property="og:description">
+<meta content="summary" name="twitter:card">
+  
+    <link rel="alternative" href="/atom.xml" title="Lost JavaScript" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  <link href="http://fonts.googleapis.com/css?family=Source+Code+Pro" rel="stylesheet" type="text/css">
+  <link rel="stylesheet" href="/css/style.css" type="text/css">
+  <!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+  
+<script type="text/javascript">
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-450827-9']);
+  _gaq.push(['_trackPageview']);
+
+  (function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+  })();
+</script>
+
+
+</head>
+
+<body>
+  <div id="container">
+    <div id="wrap">
+      <header id="header">
+  <div id="banner"></div>
+  <div id="header-outer" class="outer">
+    <div id="header-title" class="inner">
+      <h1 id="logo-wrap">
+        <a href="/" id="logo">Lost JavaScript</a>
+      </h1>
+      
+        <h2 id="subtitle-wrap">
+          <a href="/" id="subtitle">一个 Pure JavaScript 工程师的博客</a>
+        </h2>
+      
+    </div>
+    <div id="header-inner" class="inner">
+      <nav id="main-nav">
+        <a id="main-nav-toggle" class="nav-icon"></a>
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        
+          <a id="nav-rss-link" class="nav-icon" href="/atom.xml" title="RSS Feed"></a>
+        
+        <a id="nav-search-btn" class="nav-icon" title="搜索"></a>
+      </nav>
+      <div id="search-form-wrap">
+        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" results="0" class="search-form-input" placeholder="Search"><input type="submit" value="&#xF002;" class="search-form-submit"><input type="hidden" name="q" value="site:http://lostjs.com"></form>
+      </div>
+    </div>
+  </div>
+</header>
+
+      <div class="outer">
+        <section id="main"><article id="post-docker-behind-gfw" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2014/02/26/docker-behind-gfw/" class="article-date">
+  <time datetime="2014-02-26T03:16:00.000Z" itemprop="datePublished">2014年02月26日</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      Mac 下使用代理连接 docker 镜像服务器
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>Docker 是个非常牛逼的轻量级虚拟化解决方案，它可以将整个操作系统打成一个非常小的镜像，并且直接跑在宿主的 Linux Kernel 之上。然而在国内因为可恶的 GFW 存在，使用 docker 成了一件非常困难的事情。具体表现在使用 <code>docker search</code> 和 <code>docker pull</code> 的时候连接非常不稳定，这一刻我又深深的感觉到了作为一名天朝程序员的悲哀…</p>
+<h3 id="使用_HTTP_代理连接_docker_中央服务器">使用 HTTP 代理连接 docker 中央服务器</h3>
+<p>如果你的宿主操作系统是 linux 那方法就很简单了，直接通过 <code>HTTP_PROXY=127.0.0.1:8118 HTTPS_PROXY=127.0.0.1:8118 docker -d</code> 的形式启动服务即可.</p>
+<h3 id="boot2docker_使用代理的方法"><code>boot2docker</code> 使用代理的方法</h3>
+<p>Mac 下使用 docker 就必须用 <code>boot2docker</code> 来创建一个 Virtual Box 虚拟机提供 Linux 宿主环境，要用代理就略微折腾一点。如果只是临时的想用一下，可以通过以下命令来搞定:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+</pre></td><td class="code"><pre>boot2docker ssh <span class="comment"># 密码是 tcuser</span>
+<span class="built_in">sudo</span> vi /var/lib/boot2docker/profile
+<span class="comment"># export HTTP_PROXY=10.0.1.64:8118</span>
+<span class="comment"># export HTTPS_PROXY=10.0.1.64:8118</span>
+/usr/local/etc/init.d/docker restart
+</pre></td></tr></table></figure>
+
+
+        <p>- FIN -</p>
+      
+    </div>
+    
+      <footer class="article-sign">
+        <div class="author">
+          <img src="http://www.gravatar.com/avatar/c14b9141b9e07f405833634d348b8b01?s=48" alt="author">
+          <div class="content">
+            Posted By 张宇辰 <time class="bullet" datetime="2014-02-26T03:16:00.000Z" itemprop="datePublished">2014年02月26日</time>
+            <p class="license">
+            原创文章<span class="bullet">版权声明：自由转载-非商用-非衍生-保持署名</span><a class="bullet" href="http://creativecommons.org/licenses/by-nc-nd/3.0/deed.zh" rel="nofollow" target="_blank">Creative Commons BY-NC-ND 3.0</a>
+            </p>
+          </div>
+        </div>
+      </footer>
+    
+    <footer class="article-footer">
+      <a data-url="http://lostjs.com/2014/02/26/docker-behind-gfw/" data-id="6pa6a9c160gxkl2k" class="article-share-link">分享</a>
+      
+      
+        <a href="http://lostjs.com/2014/02/26/docker-behind-gfw/#comments" class="article-comment-link">评论</a>
+      
+      
+  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/docker/">docker</a></li></ul>
+
+    </footer>
+  </div>
+  
+    
+<nav id="article-nav">
+  
+    <a href="/2014/04/21/a-simple-promise-cache-by-lru-cache/" id="article-nav-newer" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Newer</strong>
+      <div class="article-nav-title">
+        
+          异步、promise 与缓存
+        
+      </div>
+    </a>
+  
+  
+    <a href="/2014/01/25/handle-exception-in-node/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Older</strong>
+      <div class="article-nav-title">Node 出现 uncaughtException 之后的优雅退出方案</div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+
+
+<section id="comments">
+  <div class="ds-thread" data-thread-key="6pa6a9c160gxkl2k" data-title="Mac 下使用代理连接 docker 镜像服务器" data-url=""></div>
+</section>
+
+</section>
+        
+          <aside id="sidebar">
+  
+    
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">标签</h3>
+    <div class="widget">
+      <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/docker/">docker</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/git/">git</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/grunt/">grunt</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/hexo/">hexo</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/javascript/">javascript</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/mustache/">mustache</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/node/">node</a><span class="tag-list-count">5</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/vim/">vim</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/zsh/">zsh</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/招聘/">招聘</a><span class="tag-list-count">1</span></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">归档</h3>
+    <div class="widget">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2014/04">四月 2014</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2014/02">二月 2014</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2014/01">一月 2014</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2013/10">十月 2013</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2013/07">七月 2013</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2012/12">十二月 2012</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2012/09">九月 2012</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2012/08">八月 2012</a><span class="archive-list-count">2</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2012/02">二月 2012</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2011/12">十二月 2011</a><span class="archive-list-count">1</span></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">最新文章</h3>
+    <div class="widget">
+      <ul>
+        
+          <li>
+            <a href="/2014/04/24/upgrade-express-4/">Express 4.0 升级手记</a>
+          </li>
+        
+          <li>
+            <a href="/2014/04/23/replace-nginx-by-node/">用 node 代替 nginx 做请求分发</a>
+          </li>
+        
+          <li>
+            <a href="/2014/04/22/from-octopress-to-hexo/">把 blog 从 octopress 迁移到 hexo</a>
+          </li>
+        
+          <li>
+            <a href="/2014/04/21/a-simple-promise-cache-by-lru-cache/">异步、promise 与缓存</a>
+          </li>
+        
+          <li>
+            <a href="/2014/02/26/docker-behind-gfw/">Mac 下使用代理连接 docker 镜像服务器</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+
+  
+</aside>
+        
+      </div>
+      <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      &copy; 2014 Ethan (pw) Zhang<br>
+      Powered by <a href="http://zespia.tw/hexo/" target="_blank">Hexo</a>
+    </div>
+  </div>
+</footer>
+    </div>
+    <nav id="mobile-nav">
+  
+    <a href="/" class="mobile-nav-link">Home</a>
+  
+</nav>
+    
+
+
+<script type="text/javascript">
+var duoshuoQuery = {
+    short_name: "lostjs"
+};
+(function () {
+    var ds = document.createElement('script');
+    ds.type = 'text/javascript';
+    ds.async = true;
+    ds.src = (document.location.protocol == 'https:' ? 'https:' : 'http:') + '//static.duoshuo.com/embed.js';
+    ds.charset = 'UTF-8';
+    (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(ds);
+})();
+</script>
+
+
+<script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+
+
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css" media="screen" type="text/css">
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+
+
+<script type="text/javascript" src="/js/script.js"></script>
+
+  </div>
+</body>
+</html>

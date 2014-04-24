@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>Grunt -- 最好的前端构建框架 | Lost JavaScript</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta content="article" property="og:type">
+<meta content="Grunt -- 最好的前端构建框架" property="og:title">
+<meta content="http://lostjs.com/2012/12/08/grunt-the-best/" property="og:url">
+<meta property="og:image">
+<meta content="Lost JavaScript" property="og:site_name">
+<meta content="每个前端开发工程师都会遇到前端文件打包、压缩的问题。
+Shell -&gt; Ant -&gt; Jake
+最开始，我是用 shell 脚本调用 yuicompressor、cssmin 来压缩文件，非常简单，就像这样：
+1
+2
+3
+4
+5
+6
+7
+#!/usr/bin/env bash
+
+cat src/a.js src/b.js src/c.js &gt; dst/main.js
+yuicom" property="og:description">
+<meta content="summary" name="twitter:card">
+  
+    <link rel="alternative" href="/atom.xml" title="Lost JavaScript" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  <link href="http://fonts.googleapis.com/css?family=Source+Code+Pro" rel="stylesheet" type="text/css">
+  <link rel="stylesheet" href="/css/style.css" type="text/css">
+  <!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+  
+<script type="text/javascript">
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-450827-9']);
+  _gaq.push(['_trackPageview']);
+
+  (function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+  })();
+</script>
+
+
+</head>
+
+<body>
+  <div id="container">
+    <div id="wrap">
+      <header id="header">
+  <div id="banner"></div>
+  <div id="header-outer" class="outer">
+    <div id="header-title" class="inner">
+      <h1 id="logo-wrap">
+        <a href="/" id="logo">Lost JavaScript</a>
+      </h1>
+      
+        <h2 id="subtitle-wrap">
+          <a href="/" id="subtitle">一个 Pure JavaScript 工程师的博客</a>
+        </h2>
+      
+    </div>
+    <div id="header-inner" class="inner">
+      <nav id="main-nav">
+        <a id="main-nav-toggle" class="nav-icon"></a>
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        
+          <a id="nav-rss-link" class="nav-icon" href="/atom.xml" title="RSS Feed"></a>
+        
+        <a id="nav-search-btn" class="nav-icon" title="搜索"></a>
+      </nav>
+      <div id="search-form-wrap">
+        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" results="0" class="search-form-input" placeholder="Search"><input type="submit" value="&#xF002;" class="search-form-submit"><input type="hidden" name="q" value="site:http://lostjs.com"></form>
+      </div>
+    </div>
+  </div>
+</header>
+
+      <div class="outer">
+        <section id="main"><article id="post-grunt-the-best" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2012/12/08/grunt-the-best/" class="article-date">
+  <time datetime="2012-12-08T03:21:00.000Z" itemprop="datePublished">2012年12月08日</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      Grunt -- 最好的前端构建框架
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>每个前端开发工程师都会遇到前端文件打包、压缩的问题。</p>
+<h2 id="Shell_-&gt;_Ant_-&gt;_Jake">Shell -&gt; Ant -&gt; Jake</h2>
+<p>最开始，我是用 shell 脚本调用 yuicompressor、cssmin 来压缩文件，非常简单，就像这样：</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+6
+7
+</pre></td><td class="code"><pre><span class="preprocessor">#!/usr/bin/env bash</span>
+
+cat src/a<span class="preprocessor">.js</span> src/b<span class="preprocessor">.js</span> src/c<span class="preprocessor">.js</span> &gt; dst/main<span class="preprocessor">.js</span>
+yuicompressor main<span class="preprocessor">.js</span>
+
+cat src/a<span class="preprocessor">.css</span> src/b<span class="preprocessor">.css</span> src/c<span class="preprocessor">.css</span> &gt; dst/main<span class="preprocessor">.css</span>
+cssmin main<span class="preprocessor">.css</span>
+</pre></td></tr></table></figure>
+
+<p>后来随着项目规模的逐渐增大，shell 脚本逐渐暴露出了很多问题，比如：</p>
+<ul>
+<li>不能自动下载依赖的外部命令，比如 yuicompressor/cssmin</li>
+<li>缺乏变量替换功能</li>
+<li>难以跨平台</li>
+<li>代码难以维护</li>
+</ul>
+<p>因此 shell 脚本在到了近百行以后就被放弃了，取而代之的是 Ant。Ant 内置了一些常见任务，比如文件复制、合并、变量替换等，并且可以方便的通过编写自定义任务来扩展。得益于 Java 灵活的扩展性，Ant 任务可以非常方便的在各个项目之间分享，很好的解决了 shell 脚本代码难以维护和迁移的缺点。Ant 还可以结合 ivy 自动解决依赖，实现了完全的跨平台支持。</p>
+<ul>
+<li>推荐文章：<a href="http://www.36ria.com/4411" target="_blank">ant入门指南—web前端开发七武器（1）</a></li>
+</ul>
+<p>但是，Ant 有个缺点：它是 Java 写的。Ant 如果要执行 js 代码，就必须通过 rhino，速度比 nodejs 慢了不少，作为一个 JavaScript 工程师，我非常希望可以直接用 js 来写构建脚本。</p>
+<p>最终让我放弃 Ant 的是一个新的项目。这个项目的特殊之处在于它用了 maven 作为 Java 的构建工具。之前用的各种 Ant 任务也就没有了用武之地。尽管我可以将 Ant 的任务迁移到 mavn 下面，但是我更希望能找到一个和后台语言完全无关的构建系统。</p>
+<p>因此在今年年初，我找到了一个 nodejs 环境下的构建框架 <a href="https://github.com/mde/jake" target="_blank">Jake</a>。Jake 的各种编译任务由 <code>Jakefile</code> 中定义（这一点很像 Make），<code>Jakefile</code> 实际上就是一个 js 文件，通过 nodejs 来执行压缩合并等常见任务。</p>
+<p>得益于 nodejs，Jake 执行 js 代码压缩的速度非常快，而且开发调试也更加方便。但是有个和 shell 脚本类似的问题：不同项目间的 Jake 任务难以重用，项目大了以后 <code>Jakefile</code> 依然很难维护，面对一个上千行的 <code>Jakefile</code>，和面对一个几百行的 shell 脚本的感觉差不了太多。</p>
+<p>以上就是我从 Shell 到 Ant 再到 Jake 的折腾经历。经历这么一圈之后，我发现一个好用的构建框架应该具有以下三个特点：</p>
+<ul>
+<li>跨平台（Ant, Jake）</li>
+<li>易维护、易迁移（Ant）</li>
+<li>开发简单（Shell，Jake）</li>
+</ul>
+<p><a href="http://gruntjs.com" target="_blank">grunt</a> 就是同时具有以上三个特点的前端构建框架。</p>
+<h2 id="grunt">grunt</h2>
+<p><a href="http://gruntjs.com" target="_blank">grunt</a> 是一个开源的基于任务 (Task) 的前端构建框架。它除了有 Jake 的优点（跨平台、开发简单）以外，还有一套设计良好的 task 框架用来组织各种构建任务。grunt 内置了几个非常常见的构建任务：</p>
+<ul>
+<li>concat - 组合各种文件</li>
+<li>lint - 用 JSHint 检查代码</li>
+<li>min - 用 UglifyJS 压缩代码</li>
+<li>qunit - 跑 QUnit 单元测试</li>
+<li>watch - 当源代码文件发生变化时自动执行任务</li>
+</ul>
+<p>除此之外还可以通过 npm 来方便的获取几百个现成的 task，比如用 closure 而不是 UglifyJS 来压缩 js，或者用 less 来生成 css，又或者用 jslint 而不是 jshint 来检查语法等，这些任务都可以在 npm 上找到。如果这些任务无法满足你的需求，grunt 还允许你方便的添加自定任务，就像写 nodejs 代码一样简单。自定任务还可以发布到 npm 上，通过 npm 在多个项目中共享这些任务。[fenbi-grunt-tasks] 就是粉笔网自定的 js 模块合并、handlebars 模板预编译任务 ([grunt-tbf2e] 貌似是淘宝的自定任务)。</p>
+<p>任务之间的组合也是 grunt 非常好用的一个特性，例如通过 watch 任务和 rsync 任务的结合，可以方便的实现当源码发生改变时，自动同步代码到服务器上。</p>
+<p>每次 grunt 执行时，grunt 都会去读取当前目录下的 <code>grunt.js</code> (就像 make 命令去寻找 Makefile 那样)，然后去读取其中的任务配置，例如源码目录等。grunt 最大的特点在于，配置文件中不包含任何的任务逻辑代码(OO 的开闭原则)。这一特性使得任务可以专心于“要做什么”而不是“要对什么做事情”，不再被特定的项目所绑架。</p>
+<ul>
+<li>推荐阅读：<a href="http://www.oschina.net/question/89964_47198" target="_blank">grunt简要介绍—基于任务的JavaScript项目命令行构建工具</a></li>
+</ul>
+<p>grunt 给我最大的感受是：原来天下有这么多码农都在为前端构建而奋斗！grunt 使得各个项目的构建脚本不再彼此孤立，使得打造整个公司的前端构建工具变的更加简单。</p>
+
+        <p>- FIN -</p>
+      
+    </div>
+    
+      <footer class="article-sign">
+        <div class="author">
+          <img src="http://www.gravatar.com/avatar/c14b9141b9e07f405833634d348b8b01?s=48" alt="author">
+          <div class="content">
+            Posted By 张宇辰 <time class="bullet" datetime="2012-12-08T03:21:00.000Z" itemprop="datePublished">2012年12月08日</time>
+            <p class="license">
+            原创文章<span class="bullet">版权声明：自由转载-非商用-非衍生-保持署名</span><a class="bullet" href="http://creativecommons.org/licenses/by-nc-nd/3.0/deed.zh" rel="nofollow" target="_blank">Creative Commons BY-NC-ND 3.0</a>
+            </p>
+          </div>
+        </div>
+      </footer>
+    
+    <footer class="article-footer">
+      <a data-url="http://lostjs.com/2012/12/08/grunt-the-best/" data-id="2bbfh32xu9s4g2ke" class="article-share-link">分享</a>
+      
+      
+        <a href="http://lostjs.com/2012/12/08/grunt-the-best/#comments" class="article-comment-link">评论</a>
+      
+      
+  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/grunt/">grunt</a></li></ul>
+
+    </footer>
+  </div>
+  
+    
+<nav id="article-nav">
+  
+    <a href="/2013/07/20/accurate-countdown-in-javascript/" id="article-nav-newer" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Newer</strong>
+      <div class="article-nav-title">
+        
+          setInterval 倒计时陷阱
+        
+      </div>
+    </a>
+  
+  
+    <a href="/2012/09/27/zsh/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Older</strong>
+      <div class="article-nav-title">使用 zsh 的九个理由</div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+
+
+<section id="comments">
+  <div class="ds-thread" data-thread-key="2bbfh32xu9s4g2ke" data-title="Grunt -- 最好的前端构建框架" data-url=""></div>
+</section>
+
+</section>
+        
+          <aside id="sidebar">
+  
+    
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">标签</h3>
+    <div class="widget">
+      <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/docker/">docker</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/git/">git</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/grunt/">grunt</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/hexo/">hexo</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/javascript/">javascript</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/mustache/">mustache</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/node/">node</a><span class="tag-list-count">5</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/vim/">vim</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/zsh/">zsh</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/招聘/">招聘</a><span class="tag-list-count">1</span></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">归档</h3>
+    <div class="widget">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2014/04">四月 2014</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2014/02">二月 2014</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2014/01">一月 2014</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2013/10">十月 2013</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2013/07">七月 2013</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2012/12">十二月 2012</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2012/09">九月 2012</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2012/08">八月 2012</a><span class="archive-list-count">2</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2012/02">二月 2012</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2011/12">十二月 2011</a><span class="archive-list-count">1</span></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">最新文章</h3>
+    <div class="widget">
+      <ul>
+        
+          <li>
+            <a href="/2014/04/24/upgrade-express-4/">Express 4.0 升级手记</a>
+          </li>
+        
+          <li>
+            <a href="/2014/04/23/replace-nginx-by-node/">用 node 代替 nginx 做请求分发</a>
+          </li>
+        
+          <li>
+            <a href="/2014/04/22/from-octopress-to-hexo/">把 blog 从 octopress 迁移到 hexo</a>
+          </li>
+        
+          <li>
+            <a href="/2014/04/21/a-simple-promise-cache-by-lru-cache/">异步、promise 与缓存</a>
+          </li>
+        
+          <li>
+            <a href="/2014/02/26/docker-behind-gfw/">Mac 下使用代理连接 docker 镜像服务器</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+
+  
+</aside>
+        
+      </div>
+      <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      &copy; 2014 Ethan (pw) Zhang<br>
+      Powered by <a href="http://zespia.tw/hexo/" target="_blank">Hexo</a>
+    </div>
+  </div>
+</footer>
+    </div>
+    <nav id="mobile-nav">
+  
+    <a href="/" class="mobile-nav-link">Home</a>
+  
+</nav>
+    
+
+
+<script type="text/javascript">
+var duoshuoQuery = {
+    short_name: "lostjs"
+};
+(function () {
+    var ds = document.createElement('script');
+    ds.type = 'text/javascript';
+    ds.async = true;
+    ds.src = (document.location.protocol == 'https:' ? 'https:' : 'http:') + '//static.duoshuo.com/embed.js';
+    ds.charset = 'UTF-8';
+    (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(ds);
+})();
+</script>
+
+
+<script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+
+
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css" media="screen" type="text/css">
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+
+
+<script type="text/javascript" src="/js/script.js"></script>
+
+  </div>
+</body>
+</html>
