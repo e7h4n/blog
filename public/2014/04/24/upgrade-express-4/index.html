@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>Express 4.0 升级手记 | Lost JavaScript</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta content="article" property="og:type">
+<meta content="Express 4.0 升级手记" property="og:title">
+<meta content="http://lostjs.com/2014/04/24/upgrade-express-4/" property="og:url">
+<meta property="og:image">
+<meta content="Lost JavaScript" property="og:site_name">
+<meta content="前几天著名的 Web 框架 [express] 更新到了 4.0 版，这个版本带来了一些比较大的更新，并且不再向下兼容 3.x 版。今天花了一点时间把项目升级到了 4.0 版，在此记录以下遇到的问题。
+Express 4.0 不再内置 connect 中间件
+这是影响比较大的一个修改，原先的各种 connect 中间件都需要单独 require 再使用。以下是修改前后的中间件对应关系:
+1
+2
+3" property="og:description">
+<meta content="summary" name="twitter:card">
+  
+    <link rel="alternative" href="/atom.xml" title="Lost JavaScript" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  <link href="http://fonts.googleapis.com/css?family=Source+Code+Pro" rel="stylesheet" type="text/css">
+  <link rel="stylesheet" href="/css/style.css" type="text/css">
+  <!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+  
+<script type="text/javascript">
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-450827-9']);
+  _gaq.push(['_trackPageview']);
+
+  (function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+  })();
+</script>
+
+
+</head>
+
+<body>
+  <div id="container">
+    <div id="wrap">
+      <header id="header">
+  <div id="banner"></div>
+  <div id="header-outer" class="outer">
+    <div id="header-title" class="inner">
+      <h1 id="logo-wrap">
+        <a href="/" id="logo">Lost JavaScript</a>
+      </h1>
+      
+        <h2 id="subtitle-wrap">
+          <a href="/" id="subtitle">一个 Pure JavaScript 工程师的博客</a>
+        </h2>
+      
+    </div>
+    <div id="header-inner" class="inner">
+      <nav id="main-nav">
+        <a id="main-nav-toggle" class="nav-icon"></a>
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        
+          <a id="nav-rss-link" class="nav-icon" href="/atom.xml" title="RSS Feed"></a>
+        
+        <a id="nav-search-btn" class="nav-icon" title="搜索"></a>
+      </nav>
+      <div id="search-form-wrap">
+        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" results="0" class="search-form-input" placeholder="Search"><input type="submit" value="&#xF002;" class="search-form-submit"><input type="hidden" name="q" value="site:http://lostjs.com"></form>
+      </div>
+    </div>
+  </div>
+</header>
+
+      <div class="outer">
+        <section id="main"><article id="post-upgrade-express-4" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2014/04/24/upgrade-express-4/" class="article-date">
+  <time datetime="2014-04-24T09:15:01.000Z" itemprop="datePublished">2014年04月24日</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      Express 4.0 升级手记
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>前几天著名的 Web 框架 [express] 更新到了 4.0 版，这个版本带来了一些比较大的更新，并且不再向下兼容 3.x 版。今天花了一点时间把项目升级到了 4.0 版，在此记录以下遇到的问题。</p>
+<h2 id="Express_4-0_不再内置_connect_中间件">Express 4.0 不再内置 connect 中间件</h2>
+<p>这是影响比较大的一个修改，原先的各种 connect 中间件都需要单独 <code>require</code> 再使用。以下是修改前后的中间件对应关系:</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+6
+</pre></td><td class="code"><pre>express.favicon        === <span class="built_in">require</span>(<span class="string">'static-favicon'</span>)
+express.logger         === <span class="built_in">require</span>(<span class="string">'morgan'</span>)
+express.json           === <span class="built_in">require</span>(<span class="string">'body-parser'</span>).json
+express.urlencoded     === <span class="built_in">require</span>(<span class="string">'body-parser'</span>).urlencoded
+express.methodOverride === <span class="built_in">require</span>(<span class="string">'method-override'</span>)
+express.static         === <span class="built_in">require</span>(<span class="string">'serve-static'</span>)
+</pre></td></tr></table></figure>
+
+<p>看起来复杂，实际上只要做个字符串替换就成了。完整列表参考 <a href="https://github.com/senchalabs/connect?source=c#middleware" target="_blank">connect 中间件列表</a>。</p>
+<h2 id="不再需要_app-use(app-router)">不再需要 <code>app.use(app.router)</code></h2>
+<p>影响第二大的更新，express 3.x 中，<code>app.get</code> 方法插入中间件的执行时机是由 <code>app.use(app.router)</code> 的位置决定的，例如:</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+6
+7
+8
+9
+</pre></td><td class="code"><pre>app.use(app.router);
+app.use(<span class="function"><span class="keyword">function</span> <span class="params">(req, res, next)</span> {</span>
+    console.log(<span class="string">'foo'</span>);
+    next();
+});
+app.get(<span class="string">'/'</span>, <span class="function"><span class="keyword">function</span> <span class="params">(req, res, next)</span> {</span>
+    console.log(<span class="string">'bar'</span>);
+    res.send(<span class="number">200</span>);
+});
+</pre></td></tr></table></figure>
+
+<p>上面代码在 express 3.x 中的 console 输出是:</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre>1
+2
+</pre></td><td class="code"><pre>bar
+foo
+</pre></td></tr></table></figure>
+
+<p>Express 4.0 不需要再显式引入 <code>app.router</code>，因此上面代码删除掉第一行后，在 express 4.0 中的 console 输出是:</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre>1
+2
+</pre></td><td class="code"><pre>foo
+bar
+</pre></td></tr></table></figure>
+
+<p>升级到 4.0 不仅仅是简单的删除 <code>app.use(app.router)</code> 就行了，一定要仔细检查代码会不会受到中间件执行顺序的影响。</p>
+<h2 id="删除了_app-configure">删除了 <code>app.configure</code></h2>
+<p>下面两段代码在 express 3.0 中的作用完全相同，express 推荐使用第二种写法，第一种写法在 4.0 中被取消了。</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+6
+7
+8
+9
+</pre></td><td class="code"><pre><span class="comment">// 写法一</span>
+app.configure(<span class="string">'development'</span>, <span class="function"><span class="keyword">function</span> <span class="params">()</span> {</span>
+    <span class="comment">// ...</span>
+});
+
+<span class="comment">// 写法二</span>
+<span class="keyword">if</span> (<span class="string">'development'</span> === app.get(<span class="string">'env'</span>)) {
+    <span class="comment">// ...</span>
+}
+</pre></td></tr></table></figure>
+
+<h2 id="删除了_express-createServer">删除了 <code>express.createServer</code></h2>
+<p>直接用 <code>express()</code> 来代替 <code>express.createServer()</code></p>
+<h2 id="其他">其他</h2>
+<p>其余还有一些细节上的修改，例如移除了 <code>res.on(&#39;header&#39;)</code>、<code>res.charset</code>，将 <code>res.headerSent</code> 改为 <code>res.headersSent</code> 等等。可以查看详细的升级教程 <a href="https://github.com/visionmedia/express/wiki/Migrating%20from%203.x%20to%204.x" target="_blank">Migrating from 3.x to 4.x</a>。</p>
+<p>参考文献:</p>
+<ul>
+<li><a href="https://github.com/senchalabs/connect?source=c#middleware" target="_blank">connect 中间件列表</a></li>
+<li><a href="https://github.com/visionmedia/express/wiki/Migrating%20from%203.x%20to%204.x" target="_blank">Migrating from 3.x to 4.x</a></li>
+</ul>
+
+        <p>- FIN -</p>
+      
+    </div>
+    
+      <footer class="article-sign">
+        <div class="author">
+          <img src="http://www.gravatar.com/avatar/c14b9141b9e07f405833634d348b8b01?s=48" alt="author">
+          <div class="content">
+            Posted By 张宇辰 <time class="bullet" datetime="2014-04-24T09:15:01.000Z" itemprop="datePublished">2014年04月24日</time>
+            <p class="license">
+            原创文章<span class="bullet">版权声明：自由转载-非商用-非衍生-保持署名</span><a class="bullet" href="http://creativecommons.org/licenses/by-nc-nd/3.0/deed.zh" rel="nofollow" target="_blank">Creative Commons BY-NC-ND 3.0</a>
+            </p>
+          </div>
+        </div>
+      </footer>
+    
+    <footer class="article-footer">
+      <a data-url="http://lostjs.com/2014/04/24/upgrade-express-4/" data-id="8yfqkvfmdfz5zqzz" class="article-share-link">分享</a>
+      
+      
+        <a href="http://lostjs.com/2014/04/24/upgrade-express-4/#comments" class="article-comment-link">评论</a>
+      
+      
+  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/node/">node</a></li></ul>
+
+    </footer>
+  </div>
+  
+    
+<nav id="article-nav">
+  
+    <a href="/2014/04/24/router-in-express-4/" id="article-nav-newer" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Newer</strong>
+      <div class="article-nav-title">
+        
+          浅谈 Express 4.0 Router 模块
+        
+      </div>
+    </a>
+  
+  
+    <a href="/2014/04/23/replace-nginx-by-node/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Older</strong>
+      <div class="article-nav-title">用 node 代替 nginx 做请求分发</div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+
+
+<section id="comments">
+  <div class="ds-thread" data-thread-key="8yfqkvfmdfz5zqzz" data-title="Express 4.0 升级手记" data-url=""></div>
+</section>
+
+</section>
+        
+          <aside id="sidebar">
+  
+    
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">标签</h3>
+    <div class="widget">
+      <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/docker/">docker</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/git/">git</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/grunt/">grunt</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/hexo/">hexo</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/javascript/">javascript</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/mustache/">mustache</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/node/">node</a><span class="tag-list-count">6</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/vim/">vim</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/zsh/">zsh</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/招聘/">招聘</a><span class="tag-list-count">1</span></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">归档</h3>
+    <div class="widget">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2014/04">四月 2014</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2014/02">二月 2014</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2014/01">一月 2014</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2013/10">十月 2013</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2013/07">七月 2013</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2012/12">十二月 2012</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2012/09">九月 2012</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2012/08">八月 2012</a><span class="archive-list-count">2</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2012/02">二月 2012</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2011/12">十二月 2011</a><span class="archive-list-count">1</span></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">最新文章</h3>
+    <div class="widget">
+      <ul>
+        
+          <li>
+            <a href="/2014/04/24/router-in-express-4/">浅谈 Express 4.0 Router 模块</a>
+          </li>
+        
+          <li>
+            <a href="/2014/04/24/upgrade-express-4/">Express 4.0 升级手记</a>
+          </li>
+        
+          <li>
+            <a href="/2014/04/23/replace-nginx-by-node/">用 node 代替 nginx 做请求分发</a>
+          </li>
+        
+          <li>
+            <a href="/2014/04/22/from-octopress-to-hexo/">把 blog 从 octopress 迁移到 hexo</a>
+          </li>
+        
+          <li>
+            <a href="/2014/04/21/a-simple-promise-cache-by-lru-cache/">异步、promise 与缓存</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+
+  
+</aside>
+        
+      </div>
+      <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      &copy; 2014 Ethan (pw) Zhang<br>
+      Powered by <a href="http://zespia.tw/hexo/" target="_blank">Hexo</a>
+    </div>
+  </div>
+</footer>
+    </div>
+    <nav id="mobile-nav">
+  
+    <a href="/" class="mobile-nav-link">Home</a>
+  
+</nav>
+    
+
+
+<script type="text/javascript">
+var duoshuoQuery = {
+    short_name: "lostjs"
+};
+(function () {
+    var ds = document.createElement('script');
+    ds.type = 'text/javascript';
+    ds.async = true;
+    ds.src = (document.location.protocol == 'https:' ? 'https:' : 'http:') + '//static.duoshuo.com/embed.js';
+    ds.charset = 'UTF-8';
+    (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(ds);
+})();
+</script>
+
+
+<script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+
+
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css" media="screen" type="text/css">
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+
+
+<script type="text/javascript" src="/js/script.js"></script>
+
+  </div>
+</body>
+</html>

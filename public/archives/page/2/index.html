@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>归档 | Lost JavaScript</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta content="website" property="og:type">
+<meta property="og:title">
+<meta content="http://lostjs.com/archives/page/2/" property="og:url">
+<meta property="og:image">
+<meta content="Lost JavaScript" property="og:site_name">
+<meta property="og:description">
+<meta content="summary" name="twitter:card">
+  
+    <link rel="alternative" href="/atom.xml" title="Lost JavaScript" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  <link href="http://fonts.googleapis.com/css?family=Source+Code+Pro" rel="stylesheet" type="text/css">
+  <link rel="stylesheet" href="/css/style.css" type="text/css">
+  <!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+  
+<script type="text/javascript">
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-450827-9']);
+  _gaq.push(['_trackPageview']);
+
+  (function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+  })();
+</script>
+
+
+</head>
+
+<body>
+  <div id="container">
+    <div id="wrap">
+      <header id="header">
+  <div id="banner"></div>
+  <div id="header-outer" class="outer">
+    <div id="header-title" class="inner">
+      <h1 id="logo-wrap">
+        <a href="/" id="logo">Lost JavaScript</a>
+      </h1>
+      
+        <h2 id="subtitle-wrap">
+          <a href="/" id="subtitle">一个 Pure JavaScript 工程师的博客</a>
+        </h2>
+      
+    </div>
+    <div id="header-inner" class="inner">
+      <nav id="main-nav">
+        <a id="main-nav-toggle" class="nav-icon"></a>
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        
+          <a id="nav-rss-link" class="nav-icon" href="/atom.xml" title="RSS Feed"></a>
+        
+        <a id="nav-search-btn" class="nav-icon" title="搜索"></a>
+      </nav>
+      <div id="search-form-wrap">
+        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" results="0" class="search-form-input" placeholder="Search"><input type="submit" value="&#xF002;" class="search-form-submit"><input type="hidden" name="q" value="site:http://lostjs.com"></form>
+      </div>
+    </div>
+  </div>
+</header>
+
+      <div class="outer">
+        <section id="main">
+  
+    <article id="post-from-octopress-to-hexo" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2014/04/22/from-octopress-to-hexo/" class="article-date">
+  <time datetime="2014-04-22T13:39:27.000Z" itemprop="datePublished">2014年04月22日</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2014/04/22/from-octopress-to-hexo/">把 blog 从 octopress 迁移到 hexo</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>之前用的一直用 <a href="http://octopress.org" target="_blank">octopress</a> 来写 blog。对于我来说 octopress 有个最大的缺点，就是它是 ruby 写的。导致我经常就要去搞搞 ruby 的版本啊、gem 啊什么杂七杂八的事情。今天无意间看到了一个 node 写的博客工具 <a href="http://hexo.io" target="_blank">hexo</a>，功能类似于 octorepss 但是部署成本比 octopress 低了不少，于是花了 15 分钟把整个博客从 octopress 迁移到了 hexo 上面。</p>
+<p>和 octopress 类似，hexo 也是一个静态页面生成工具。它允许用 markdown 语法来写文章，并且生成并上传整个网站到 github。它和 octopress 有着完全一样的文章格式，所以整个迁移过程非常轻松。</p>
+<h3 id="安装_hexo">安装 hexo</h3>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre>1
+2
+</pre></td><td class="code"><pre><span class="comment"># 国内网速慢可以尝试加上 --registry=http://r.cnpmjs.org 来使用国内镜像加速</span>
+npm install -g hexo
+</pre></td></tr></table></figure>
+
+<h3 id="初始化目录">初始化目录</h3>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre>1
+</pre></td><td class="code"><pre>hexo init blog && <span class="built_in">cd</span> blog
+</pre></td></tr></table></figure>
+
+<h3 id="迁移_octopress_的文章">迁移 octopress 的文章</h3>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre>1
+2
+</pre></td><td class="code"><pre>rm -rf <span class="built_in">source</span>/_posts
+cp <span class="operator">-a</span> OCTOPRESS_BLOG/<span class="built_in">source</span>/_posts <span class="built_in">source</span>/
+</pre></td></tr></table></figure>
+
+<h3 id="修改链接规则">修改链接规则</h3>
+<p>需要修改 <code>_config.yml</code> 中 <code>new_post_name</code> 一行:</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre>1
+</pre></td><td class="code"><pre><span class="symbol">new_post_name:</span> <span class="symbol">:year-</span><span class="symbol">:month-</span><span class="symbol">:day-</span><span class="symbol">:title</span>.md
+</pre></td></tr></table></figure>
+
+<h3 id="修改博客信息">修改博客信息</h3>
+<p>例如博客名称、网站地址等等，这些内容都在 <code>_config.yml</code> 中。另外还要将配置文件最后的 <code>deploy</code> 信息修改成 github 地址:</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+</pre></td><td class="code"><pre>deploy:
+  repo: git@github.com:USER/REPO
+  <span class="class"><span class="keyword">type</span>: <span class="title">github</span></span>
+  brandh: master
+</pre></td></tr></table></figure>
+
+<p>如果博客用了顶级域名，还需要在 <code>source</code> 目录下新建一个 <code>CNAME</code> 文件:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre>1
+</pre></td><td class="code"><pre><span class="built_in">echo</span> <span class="string">"lostjs.com"</span> &gt; <span class="built_in">source</span>/CNAME
+</pre></td></tr></table></figure>
+
+<h3 id="预览效果">预览效果</h3>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre>1
+2
+</pre></td><td class="code"><pre>hexo generate
+hexo server
+</pre></td></tr></table></figure>
+
+<p>然后浏览器访问本地 4000 端口即可。<code>hexo server</code> 和 octopress 的 <code>rake preview</code> 命令类似，会自动监听本地文件修改，但是如果修改的是 <code>_config.yml</code> 的话就需要重新 <code>hexo generate</code> 才能看到效果。</p>
+<h3 id="发布">发布</h3>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre>1
+</pre></td><td class="code"><pre>hexo deploy
+</pre></td></tr></table></figure>
+
+<p>迁移完毕，浏览器中试一下，原先的 url 都能正常访问。</p>
+<h1 id="整体感受">整体感受</h1>
+<p>hexo 给我的第一感受就是简单，不像 octopress 一样，hexo init 后生成的文件非常少，一眼看过去清除明了。在任何一台机器上只需要 <code>npm install -g hexo</code> 之后就能使用，不像 ruby 一样还需要搞 rbenv 并编译 ruby 之类的事情。另外一个感受就是速度快，不管是 generate 还是 deploy 都比 octopress 快了不少。整体来说 hexo 是一个非常值得一试的博客工具。</p>
+
+        <p>- FIN -</p>
+      
+    </div>
+    
+    <footer class="article-footer">
+      <a data-url="http://lostjs.com/2014/04/22/from-octopress-to-hexo/" data-id="v960v1mmu73f4nts" class="article-share-link">分享</a>
+      
+      
+        <a href="http://lostjs.com/2014/04/22/from-octopress-to-hexo/#comments" class="article-comment-link">评论</a>
+      
+      
+  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/hexo/">hexo</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+
+
+  
+    <article id="post-a-simple-promise-cache-by-lru-cache" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2014/04/21/a-simple-promise-cache-by-lru-cache/" class="article-date">
+  <time datetime="2014-04-21T14:01:00.000Z" itemprop="datePublished">2014年04月21日</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2014/04/21/a-simple-promise-cache-by-lru-cache/">异步、promise 与缓存</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h2 id="异步操作缓存">异步操作缓存</h2>
+<p>在 Node 开发过程中要常常和异步调用打交道，例如发送 http 请求、读取文件内容等。有时我们需要将这些异步 I/O 操作的结果缓存下来，使得程序运行的速度更快，例如:</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+</pre></td><td class="code"><pre><span class="keyword">var</span> fileContent = <span class="literal">null</span>;
+<span class="function"><span class="keyword">function</span> <span class="title">readFile</span><span class="params">(callback)</span> {</span>
+    <span class="keyword">if</span> (fileContent !== <span class="literal">null</span>) {
+        process.nextTick(<span class="function"><span class="keyword">function</span> <span class="params">()</span> {</span>
+            callback(<span class="literal">null</span>, fileContent);
+        });
+        <span class="keyword">return</span>;
+    }
+
+    fs.readFile(FILE_PATH, <span class="function"><span class="keyword">function</span> <span class="params">(err, content)</span> {</span>
+        <span class="keyword">if</span> (err) {
+            callback(err);
+            <span class="keyword">return</span>;
+        }
+
+        fileContent = content;
+        callback(<span class="literal">null</span>, content);
+    });
+}
+</pre></td></tr></table></figure>
+
+<p>上面的代码用 <code>fileContent</code> 变量做了一个简单的内存缓存，在 <code>readFile</code> 函数中，如果发现缓存中存在内容，则跳过文件读取操作。</p>
+<p>这是个非常简单的缓存应用案例，我们可以将代码中的缓存逻辑抽出来，与业务逻辑分离，成为一个通用的缓存方法 <code>cacheAsync</code>:</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+</pre></td><td class="code"><pre><span class="function"><span class="keyword">function</span> <span class="title">cacheAsync</span><span class="params">(logical)</span> {</span>
+    <span class="keyword">var</span> cache = <span class="literal">null</span>;
+    <span class="keyword">return</span> <span class="function"><span class="keyword">function</span> <span class="params">(callback)</span> {</span>
+        <span class="keyword">if</span> (cache) {
+            process.nextTick(<span class="function"><span class="keyword">function</span> <span class="params">()</span> {</span>
+                callback(<span class="literal">null</span>, cache);
+            });
+            <span class="keyword">return</span>;
+        }
+
+        logical(<span class="function"><span class="keyword">function</span> <span class="params">(err, result)</span> {</span>
+            <span class="keyword">if</span> (err) {
+                logical(err);
+                <span class="keyword">return</span>;
+            }
+
+            cache = result;
+            callback(<span class="literal">null</span>, result);
+        });
+    };
+}
+
+<span class="keyword">var</span> readFile = cacheAsync(<span class="function"><span class="keyword">function</span> <span class="params">(callback)</span> {</span>
+    fs.readFile(FILE_PATH, callback);
+});
+
+readFile(<span class="function"><span class="keyword">function</span> <span class="params">(err, content)</span> {</span>
+    <span class="keyword">if</span> (err) {
+        <span class="keyword">throw</span> err;
+        <span class="keyword">return</span>;
+    }
+
+    console.log(<span class="string">'file:'</span>, content);
+});
+</pre></td></tr></table></figure>
+
+<p>使用 <code>cacheAsync</code> 方法可以很容易的给一个异步回调函数加上缓存。</p>
+<h2 id="promise">promise</h2>
+<p><code>promise</code> 是和上面代码中示范的 callback 异步回调方式截然不同的另一种异步范式。<code>promise</code> 范式下的异步函数不再接收一个 callback 函数，而是返回一个 promise 对象。promise 对象通过 <code>then</code> 方法来绑定回调函数，通过 <code>catch</code> 方法绑定错误处理函数。</p>
+<p>nodejs 目前有很多个 promise 异步范式的库，最流行的是 <code>q</code>。这里以 q 为例，示范一个简单的 promise 异步范式:</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+</pre></td><td class="code"><pre><span class="keyword">var</span> readFile = <span class="function"><span class="keyword">function</span> <span class="params">()</span> {</span>
+    <span class="comment">// q.nfcall 使一个 callback 风格的异步函数返回一个 promise 对象</span>
+    <span class="keyword">return</span> q.nfcall(fs.readFile, FILE_PATH);
+};
+
+<span class="comment">// 下面这行看起来就和同步调用一样</span>
+<span class="keyword">var</span> fileContent = readFile();
+
+fileContent.then(<span class="function"><span class="keyword">function</span> <span class="params">(content)</span> {</span>
+    console.log(<span class="string">'file:'</span>, content);
+}).catch(<span class="function"><span class="keyword">function</span> <span class="params">(err)</span> {</span>
+    console.log(err);
+});
+</pre></td></tr></table></figure>
+
+<p>看起来是不是感觉代码更复杂了？除了能看到异常逻辑和正常流程被分离了以外，似乎没有太多好处？那么看一个更复杂的例子，这个例子尝试从两个数据源读取用户信息:</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+</pre></td><td class="code"><pre><span class="function"><span class="keyword">function</span> <span class="title">getUserSync</span><span class="params">()</span> {</span>
+    <span class="keyword">var</span> user = fetchUserFromWeiboSync();
+
+    <span class="keyword">if</span> (!user) {
+        user = fetchUserFromRenrenSync();
+    }
+
+    <span class="keyword">if</span> (!user) {
+        <span class="keyword">throw</span> <span class="keyword">new</span> <span class="built_in">Error</span>(<span class="number">404</span>);
+    }
+
+    <span class="keyword">return</span> user;
+}
+</pre></td></tr></table></figure>
+
+<p>callback 回调版本，一个常见的 callback hell:</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+</pre></td><td class="code"><pre><span class="function"><span class="keyword">function</span> <span class="title">getUserAsync</span><span class="params">(callback)</span> {</span>
+    fetchUserFromWeiboAsync(<span class="function"><span class="keyword">function</span> <span class="params">(err)</span> {</span>
+        <span class="keyword">if</span> (err) {
+            fetchUserFromRenrenAsync(<span class="function"><span class="keyword">function</span> <span class="params">(err, user)</span> {</span>
+                <span class="keyword">if</span> (err) {
+                    callback(<span class="keyword">new</span> <span class="built_in">Error</span>(<span class="number">404</span>));
+                } <span class="keyword">else</span> {
+                    callback(<span class="literal">null</span>, user);
+                }
+            });
+        } <span class="keyword">else</span> {
+            callback(<span class="literal">null</span>, user);
+        }
+    })
+}
+</pre></td></tr></table></figure>
+
+<p>promise 版本，代码之少令人惊讶:</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre>1
+2
+3
+</pre></td><td class="code"><pre><span class="function"><span class="keyword">function</span> <span class="title">getUserQ</span><span class="params">()</span> {</span>
+    <span class="keyword">return</span> fetchUserFromWeiboQ().catch(fetchUserFromRenrenQ);
+}
+</pre></td></tr></table></figure>
+
+<h2 id="promise_与缓存">promise 与缓存</h2>
+<p>给一个 promise 范式下的异步函数加缓存是一件非常轻松的事情，因为你不需要处理任何的异常流程:</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+</pre></td><td class="code"><pre><span class="keyword">var</span> q = <span class="built_in">require</span>(<span class="string">'q'</span>);
+
+<span class="function"><span class="keyword">function</span> <span class="title">cacheQ</span><span class="params">(logical)</span> {</span>
+    <span class="keyword">var</span> cache = <span class="literal">null</span>;
+
+    <span class="keyword">return</span> <span class="function"><span class="keyword">function</span> <span class="params">()</span> {</span>
+        <span class="keyword">if</span> (cache !== <span class="literal">null</span>) {
+            <span class="keyword">return</span> q(cache);
+        }
+
+        <span class="comment">// 这里不需要再处理任何的异常，缓存方法和程序逻辑进一步解耦</span>
+        <span class="keyword">return</span> logical().then(<span class="function"><span class="keyword">function</span> <span class="params">(result)</span> {</span>
+            cache = result;
+            <span class="comment">// 这里必须 return，因为这里的返回值会作为参数传递给下一个 then 方法绑定的回调函数</span>
+            <span class="keyword">return</span> result;
+        });
+    };
+}
+
+<span class="keyword">var</span> readFile = cacheQ(<span class="function"><span class="keyword">function</span> <span class="params">()</span> {</span>
+    <span class="comment">// q.nfcall 使一个 callback 风格的异步函数返回一个 promise 对象</span>
+    <span class="keyword">return</span> q.nfcall(fs.readFile, FILE_PATH);
+});
+</pre></td></tr></table></figure>
+
+<h2 id="更灵活的缓存">更灵活的缓存</h2>
+<p>在实际应用中，一个缓存函数还应当支持以下特性:</p>
+<ol>
+<li>缓存应该是一个 key-value 存储，而不是只能缓存一个值</li>
+<li>避免使用一个简单的内存对象来做缓存，更好的选择有 lru-cache、redis 以及 memcached 等</li>
+<li>缓存函数应该对逻辑函数透明，即逻辑函数是否被缓存，不应该影响整个程序的执行结果</li>
+</ol>
+<p>以下给一个实际项目中应用的例子:</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+</pre></td><td class="code"><pre><span class="keyword">var</span> q = <span class="built_in">require</span>(<span class="string">'q'</span>);
+<span class="keyword">var</span> LRU = <span class="built_in">require</span>(<span class="string">'lru-cache'</span>);
+
+<span class="function"><span class="keyword">function</span> <span class="title">cacheQ</span><span class="params">(logical, key)</span> {</span>
+    <span class="keyword">var</span> cache = <span class="keyword">new</span> LRU({
+        max: <span class="number">100</span>, <span class="comment">// 最大缓存数量，防止内存泄露</span>
+        maxAge: <span class="number">60000</span> <span class="comment">// 一分钟过期</span>
+    });
+
+    <span class="keyword">return</span> <span class="function"><span class="keyword">function</span> <span class="params">()</span> {</span>
+        <span class="keyword">var</span> args = <span class="built_in">arguments</span>;
+        key = <span class="keyword">typeof</span> key === <span class="string">'function'</span> ? key.apply(<span class="keyword">this</span>, args) : <span class="string">'__default__'</span>;
+
+        <span class="comment">// 这里支持 key 作为一个 promise 对象，所以需要用 q 来包装这个对象</span>
+        <span class="keyword">return</span> q(key).then(<span class="function"><span class="keyword">function</span> <span class="params">(key)</span> {</span>
+            <span class="keyword">if</span> (cache.has(key)) {
+                <span class="keyword">return</span> cache.get(key);
+            }
+
+            <span class="keyword">return</span> logical.apply(<span class="keyword">this</span>, args).then(<span class="function"><span class="keyword">function</span> <span class="params">(result)</span> {</span>
+                cache.set(key, result);
+                <span class="keyword">return</span> result;
+            });
+        }.bind(<span class="keyword">this</span>)); <span class="comment">// 注意 this 的传递</span>
+    };
+}
+
+<span class="keyword">var</span> readFileCached = cacheQ(<span class="function"><span class="keyword">function</span> <span class="params">(path)</span> {</span>
+    <span class="keyword">return</span> q.nfcall(fs.readFile, path);
+}, <span class="function"><span class="keyword">function</span> <span class="params">(path)</span> {</span>
+    <span class="keyword">return</span> path;
+});
+</pre></td></tr></table></figure>
+
+
+        <p>- FIN -</p>
+      
+    </div>
+    
+    <footer class="article-footer">
+      <a data-url="http://lostjs.com/2014/04/21/a-simple-promise-cache-by-lru-cache/" data-id="lsov6zobhjxrc1t4" class="article-share-link">分享</a>
+      
+      
+        <a href="http://lostjs.com/2014/04/21/a-simple-promise-cache-by-lru-cache/#comments" class="article-comment-link">评论</a>
+      
+      
+  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/node/">node</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+
+
+  
+    <article id="post-docker-behind-gfw" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2014/02/26/docker-behind-gfw/" class="article-date">
+  <time datetime="2014-02-26T03:16:00.000Z" itemprop="datePublished">2014年02月26日</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2014/02/26/docker-behind-gfw/">Mac 下使用代理连接 docker 镜像服务器</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>Docker 是个非常牛逼的轻量级虚拟化解决方案，它可以将整个操作系统打成一个非常小的镜像，并且直接跑在宿主的 Linux Kernel 之上。然而在国内因为可恶的 GFW 存在，使用 docker 成了一件非常困难的事情。具体表现在使用 <code>docker search</code> 和 <code>docker pull</code> 的时候连接非常不稳定，这一刻我又深深的感觉到了作为一名天朝程序员的悲哀…</p>
+<h3 id="使用_HTTP_代理连接_docker_中央服务器">使用 HTTP 代理连接 docker 中央服务器</h3>
+<p>如果你的宿主操作系统是 linux 那方法就很简单了，直接通过 <code>HTTP_PROXY=127.0.0.1:8118 HTTPS_PROXY=127.0.0.1:8118 docker -d</code> 的形式启动服务即可.</p>
+<h3 id="boot2docker_使用代理的方法"><code>boot2docker</code> 使用代理的方法</h3>
+<p>Mac 下使用 docker 就必须用 <code>boot2docker</code> 来创建一个 Virtual Box 虚拟机提供 Linux 宿主环境，要用代理就略微折腾一点。如果只是临时的想用一下，可以通过以下命令来搞定:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+</pre></td><td class="code"><pre>boot2docker ssh <span class="comment"># 密码是 tcuser</span>
+<span class="built_in">sudo</span> vi /var/lib/boot2docker/profile
+<span class="comment"># export HTTP_PROXY=10.0.1.64:8118</span>
+<span class="comment"># export HTTPS_PROXY=10.0.1.64:8118</span>
+/usr/local/etc/init.d/docker restart
+</pre></td></tr></table></figure>
+
+
+        <p>- FIN -</p>
+      
+    </div>
+    
+    <footer class="article-footer">
+      <a data-url="http://lostjs.com/2014/02/26/docker-behind-gfw/" data-id="u17nqehw55wp07e6" class="article-share-link">分享</a>
+      
+      
+        <a href="http://lostjs.com/2014/02/26/docker-behind-gfw/#comments" class="article-comment-link">评论</a>
+      
+      
+  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/docker/">docker</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+
+
+  
+  
+    <nav id="page-nav">
+      <a class="extend prev" href="/archives/">&laquo; 上一页</a><a class="page-number" href="/archives/">1</a><span class="page-number current">2</span><a class="page-number" href="/archives/page/3/">3</a><a class="page-number" href="/archives/page/4/">4</a><a class="page-number" href="/archives/page/5/">5</a><a class="extend next" href="/archives/page/3/">下一页 &raquo;</a>
+    </nav>
+  
+
+</section>
+        
+          <aside id="sidebar">
+  
+    
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">标签</h3>
+    <div class="widget">
+      <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/docker/">docker</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/git/">git</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/grunt/">grunt</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/hexo/">hexo</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/javascript/">javascript</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/mustache/">mustache</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/node/">node</a><span class="tag-list-count">6</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/vim/">vim</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/zsh/">zsh</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/招聘/">招聘</a><span class="tag-list-count">1</span></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">归档</h3>
+    <div class="widget">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2014/04">四月 2014</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2014/02">二月 2014</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2014/01">一月 2014</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2013/10">十月 2013</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2013/07">七月 2013</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2012/12">十二月 2012</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2012/09">九月 2012</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2012/08">八月 2012</a><span class="archive-list-count">2</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2012/02">二月 2012</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2011/12">十二月 2011</a><span class="archive-list-count">1</span></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">最新文章</h3>
+    <div class="widget">
+      <ul>
+        
+          <li>
+            <a href="/2014/04/24/router-in-express-4/">浅谈 Express 4.0 Router 模块</a>
+          </li>
+        
+          <li>
+            <a href="/2014/04/24/upgrade-express-4/">Express 4.0 升级手记</a>
+          </li>
+        
+          <li>
+            <a href="/2014/04/23/replace-nginx-by-node/">用 node 代替 nginx 做请求分发</a>
+          </li>
+        
+          <li>
+            <a href="/2014/04/22/from-octopress-to-hexo/">把 blog 从 octopress 迁移到 hexo</a>
+          </li>
+        
+          <li>
+            <a href="/2014/04/21/a-simple-promise-cache-by-lru-cache/">异步、promise 与缓存</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+
+  
+</aside>
+        
+      </div>
+      <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      &copy; 2014 Ethan (pw) Zhang<br>
+      Powered by <a href="http://zespia.tw/hexo/" target="_blank">Hexo</a>
+    </div>
+  </div>
+</footer>
+    </div>
+    <nav id="mobile-nav">
+  
+    <a href="/" class="mobile-nav-link">Home</a>
+  
+</nav>
+    
+
+
+<script type="text/javascript">
+var duoshuoQuery = {
+    short_name: "lostjs"
+};
+(function () {
+    var ds = document.createElement('script');
+    ds.type = 'text/javascript';
+    ds.async = true;
+    ds.src = (document.location.protocol == 'https:' ? 'https:' : 'http:') + '//static.duoshuo.com/embed.js';
+    ds.charset = 'UTF-8';
+    (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(ds);
+})();
+</script>
+
+
+<script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+
+
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css" media="screen" type="text/css">
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+
+
+<script type="text/javascript" src="/js/script.js"></script>
+
+  </div>
+</body>
+</html>

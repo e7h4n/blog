@@ -1,0 +1,2305 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <title><![CDATA[Lost JavaScript]]></title>
+  <subtitle><![CDATA[一个 Pure JavaScript 工程师的博客]]></subtitle>
+  <link href="/atom.xml" rel="self"/>
+  <link href="http://lostjs.com/"/>
+  <updated>2014-04-24T15:17:44.013Z</updated>
+  <id>http://lostjs.com/</id>
+  
+  <author>
+    <name><![CDATA[Ethan (pw) Zhang]]></name>
+    <email><![CDATA[perfectworks@gmail.com]]></email>
+  </author>
+  
+  <generator uri="http://zespia.tw/hexo/">Hexo</generator>
+  
+  <entry>
+    <title><![CDATA[浅谈 Express 4.0 Router 模块]]></title>
+    <link href="http://lostjs.com/2014/04/24/router-in-express-4/"/>
+    <id>http://lostjs.com/2014/04/24/router-in-express-4/</id>
+    <published>2014-04-24T14:02:45.000Z</published>
+    <updated>2014-04-24T15:17:00.000Z</updated>
+    <content type="html"><![CDATA[<p>Express 是目前 node 社区最主要的 Web 框架，前不久刚刚升级到了 4.0 版本。与 3.x 版本比，4.0 版本拥有一个全新设计的 Router 模块，开发者可以更方便的对 middleware 进行隔离与重用。</p>
+<h2 id="Express_3-x_时代的中间件_(middleware)_与控制器_(controller)">Express 3.x 时代的中间件 (middleware) 与控制器 (controller)</h2>
+<p>在 express 3.x 版本中，一个控制器往往不是业务逻辑的全部，中间件才是业务逻辑的大头。例如一个处理用户订单的服务，往往验证用户权限、读写数据库等主要逻辑工作都在中间件中就完成了，而控制器所做的大部分工作就是拼数据给视图 (view）。</p>
+<p>一个标准的 URL 映射写法如下:</p>
+<figure class="highlight javascript"><figcaption><span>app.js</span></figcaption><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+</pre></td><td class="code"><pre><span class="comment">// 这里是一些中间件，express 的常见写法</span>
+<span class="keyword">var</span> A = <span class="built_in">require</span>(<span class="string">'./middlewares/A'</span>);
+<span class="keyword">var</span> B = <span class="built_in">require</span>(<span class="string">'./middlewares/B'</span>);
+<span class="keyword">var</span> C = <span class="built_in">require</span>(<span class="string">'./middlewares/C'</span>);
+app.get(<span class="string">'/books'</span>, A, B, C, <span class="built_in">require</span>(<span class="string">'./controllers/book'</span>).index);
+</pre></td></tr></table></figure>
+
+
+<figure class="highlight javascript"><figcaption><span>controllers/book.js</span></figcaption><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+6
+7
+</pre></td><td class="code"><pre>exports.index = <span class="function"><span class="keyword">function</span> <span class="params">(req, res)</span> {</span>
+    <span class="keyword">var</span> retA = req.A; <span class="comment">// 中间件 A 的输出结果</span>
+    <span class="keyword">var</span> retB = req.B; <span class="comment">// 中间件 B 的输出结果</span>
+    <span class="keyword">var</span> retC = req.C; <span class="comment">// 中间件 C 的输出结果</span>
+    <span class="comment">// ... 其余程序逻辑</span>
+}
+<span class="comment">// ...</span>
+</pre></td></tr></table></figure>
+
+<p>控制器与中间件的相互依赖关系是完全隐式的，不能通过代码分析来得到任何的保证。中间件的插入与控制器的代码被分离在了 <code>app.js</code> 与 <code>controllers/book.js</code> 两个文件中，不仅阅读起来不直观，修改起来也很容易出错。假如有一天团队的新同事修改了 <code>book.js</code> 去掉了中间件 <code>C</code> 的逻辑，但是忘记了修改 <code>app.js</code>（这是一个非常容易犯的错误），那么 express 不会报任何错误，code review 也很难发现，因为这两处代码离得实在是太远了。</p>
+<p>这种设计同时会导致测试非常困难，因为单独 <code>require</code> 一个控制器是毫无意义的，因为控制器本身不可能独立于中间件来执行。如果要测试控制器，要么在单元测试代码在控制器前里现场装配中间件，要么就 mock 请求通过中间件后的数据。无论哪种做法，都需要单元测试完全了解中间件与控制器的业务逻辑才可能实现，这样就增大了单元测试的难度。</p>
+<p>一个解决方法是将二者的依赖关系倒置，把控制器模块写成一个接收 <code>app</code> 作为参数的函数，在函数内部装配中间件与控制器。代码如下:</p>
+<figure class="highlight javascript"><figcaption><span>app.js</span></figcaption><table><tr><td class="gutter"><pre>1
+</pre></td><td class="code"><pre><span class="built_in">require</span>(<span class="string">'./controllers/book'</span>)(app);
+</pre></td></tr></table></figure>
+
+
+<figure class="highlight javascript"><figcaption><span>controllers/book.js</span></figcaption><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+</pre></td><td class="code"><pre><span class="keyword">var</span> A = <span class="built_in">require</span>(<span class="string">'../middlewares/A'</span>);
+<span class="keyword">var</span> B = <span class="built_in">require</span>(<span class="string">'../middlewares/B'</span>);
+<span class="keyword">var</span> C = <span class="built_in">require</span>(<span class="string">'../middlewares/C'</span>);
+
+module.exports = <span class="function"><span class="keyword">function</span> <span class="params">(app)</span> {</span>
+    app.get(<span class="string">'/books'</span>, A, B, C, <span class="function"><span class="keyword">function</span> <span class="params">(req, res)</span> {</span>
+        <span class="keyword">var</span> retA = req.A; <span class="comment">// 中间件 A 的输出结果</span>
+        <span class="keyword">var</span> retB = req.B; <span class="comment">// 中间件 B 的输出结果</span>
+        <span class="keyword">var</span> retC = req.C; <span class="comment">// 中间件 C 的输出结果</span>
+        <span class="comment">// ... 其余程序逻辑</span>
+    });
+};
+<span class="comment">// ...</span>
+</pre></td></tr></table></figure>
+
+<p>这样做虽然提高了代码的内聚性，但是直接把 <code>app</code> 暴露给其它模块使得 <code>app</code> 有被滥用的风险，让二者从面向接口的松散耦合变成了直接操纵实例的强耦合。同时这种方案不仅没有提高可测试性，反而大大提高了单元测试的难度（想想现在都需要 mock 一个 <code>app</code> 了 T_T）。</p>
+<p>为了更好的解决这个问题，Express 4.0 给出了更好的解决方式: <code>express.Router</code>。</p>
+<h2 id="使用_express-Router_来组织控制器与中间件">使用 <code>express.Router</code> 来组织控制器与中间件</h2>
+<p><code>express.Router</code> 可以认为是一个微型的只用来处理中间件与控制器的 <code>app</code>，它拥有和 <code>app</code> 类似的方法，例如 <code>get</code>、<code>post</code>、<code>all</code>、<code>use</code> 等等。上面的例子使用 <code>express.Router</code> 可以修改为:</p>
+<figure class="highlight javascript"><figcaption><span>app.js</span></figcaption><table><tr><td class="gutter"><pre>1
+</pre></td><td class="code"><pre>app.use(<span class="built_in">require</span>(<span class="string">'./controllers/book'</span>));
+</pre></td></tr></table></figure>
+
+
+<figure class="highlight javascript"><figcaption><span>controllers/book.js</span></figcaption><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+</pre></td><td class="code"><pre><span class="keyword">var</span> router = <span class="built_in">require</span>(<span class="string">'express'</span>).Rouer(); <span class="comment">// 新建一个 router</span>
+
+<span class="keyword">var</span> A = <span class="built_in">require</span>(<span class="string">'../middlewares/A'</span>);
+<span class="keyword">var</span> B = <span class="built_in">require</span>(<span class="string">'../middlewares/B'</span>);
+<span class="keyword">var</span> C = <span class="built_in">require</span>(<span class="string">'../middlewares/C'</span>);
+
+<span class="comment">// 在 router 上装备控制器与中间件</span>
+router.get(<span class="string">'/books'</span>, A, B, C, <span class="function"><span class="keyword">function</span> <span class="params">(req, res)</span> {</span>
+    <span class="keyword">var</span> retA = req.A; <span class="comment">// 中间件 A 的输出结果</span>
+    <span class="keyword">var</span> retB = req.B; <span class="comment">// 中间件 B 的输出结果</span>
+    <span class="keyword">var</span> retC = req.C; <span class="comment">// 中间件 C 的输出结果</span>
+    <span class="comment">// ... 其余程序逻辑</span>
+});
+
+<span class="comment">// ...</span>
+
+<span class="comment">// 返回 router 供 app 使用</span>
+module.exports = router;
+</pre></td></tr></table></figure>
+
+<p>通过 <code>express.Router</code>，控制器与中间件的代码紧密的联系在一起，并且避免了传递 <code>app</code> 的潜在风险。同时，一个 <code>router</code> 就是一个完整的功能模块，不需要任何装配就可以执行。这一点对于单元测试来说非常简单。</p>
+<h2 id="express-Router_的其他特性"><code>express.Router</code> 的其他特性</h2>
+<h3 id="中间件重用">中间件重用</h3>
+<p>上面提到过，<code>express.Router</code> 可以认为是一个迷你的 <code>app</code>，它拥有一个独立的中间件队列。这个特性可以用来共享一些常用的中间件，例如:</p>
+<figure class="highlight javascript"><figcaption><span>express 3.x</span></figcaption><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+6
+</pre></td><td class="code"><pre><span class="comment">// parseBook 是个中间件</span>
+app.get(<span class="string">'/books/:bookId'</span>, parseBook, viewBook);
+app.get(<span class="string">'/books/:bookId/edit'</span>, parseBook, editBook);
+app.get(<span class="string">'/books/:bookId/move'</span>, parseBook, moveBook);
+
+app.get(<span class="string">'/other_link'</span>, otherController);
+</pre></td></tr></table></figure>
+
+<p>Express 4.0 的写法:</p>
+<figure class="highlight javascript"><figcaption><span>express 4.0</span></figcaption><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+</pre></td><td class="code"><pre><span class="keyword">var</span> bookRouter = express.Router();
+app.use(<span class="string">'/books'</span>, bookRouter);
+
+bookRouter.use(parseBook);
+<span class="comment">// 下面三个控制器都会经过 parseBook 中间件</span>
+bookRouter.get(<span class="string">'/books/:bookId'</span>, viewBook);
+bookRouter.get(<span class="string">'/books/:bookId/edit'</span>, editBook);
+bookRouter.get(<span class="string">'/books/:bookId/move'</span>, moveBook);
+
+app.get(<span class="string">'/other_link'</span>, otherController); <span class="comment">// 不会经过 parseBook 中间件</span>
+</pre></td></tr></table></figure>
+
+<p>这个例子中 <code>bookRouter</code> 使 <code>parseBook</code> 这个中间件得到了充分的重用。</p>
+<h3 id="搭建_rest-ful_服务">搭建 rest-ful 服务</h3>
+<p>Code talks:</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+</pre></td><td class="code"><pre><span class="keyword">var</span> bookRouter = express.Router();
+bookRouter
+    .route(<span class="string">'/books/:bookId?'</span>)
+    .get(<span class="function"><span class="keyword">function</span> <span class="params">(req, res)</span> {</span>
+        <span class="comment">// ...</span>
+    })
+    .put(<span class="function"><span class="keyword">function</span> <span class="params">(req, res)</span> {</span>
+        <span class="comment">// ...</span>
+    })
+    .post(<span class="function"><span class="keyword">function</span> <span class="params">(req, res)</span> {</span>
+        <span class="comment">// ...</span>
+    })
+    .delete(<span class="function"><span class="keyword">function</span> <span class="params">(req, res)</span> {</span>
+        <span class="comment">// ...</span>
+    })
+</pre></td></tr></table></figure>
+
+<h2 id="小节">小节</h2>
+<p><code>express.Router</code> 是 express 4.0 中我最喜欢的更新，我认为 express 4.0 的代码里应该尽量多使用 <code>express.Router</code> 来代替原先的 <code>app.get</code> 方式。原先 URL 路径、中间件、控制器三者的松散关系可以借由 <code>express.Router</code> 变得紧密，整个控制器变成了一个不依赖于任何外部实例的独立模块，更有利于模块的拆分（想想把网站的各个模块都拆成独立的 router 吧），同时对于测试也更加友好。</p>
+]]></content>
+    
+    
+      <category term="node" scheme="http://lostjs.com/tags/node/"/>
+    
+  </entry>
+  
+  <entry>
+    <title><![CDATA[Express 4.0 升级手记]]></title>
+    <link href="http://lostjs.com/2014/04/24/upgrade-express-4/"/>
+    <id>http://lostjs.com/2014/04/24/upgrade-express-4/</id>
+    <published>2014-04-24T09:15:01.000Z</published>
+    <updated>2014-04-24T14:00:29.000Z</updated>
+    <content type="html"><![CDATA[<p>前几天著名的 Web 框架 [express] 更新到了 4.0 版，这个版本带来了一些比较大的更新，并且不再向下兼容 3.x 版。今天花了一点时间把项目升级到了 4.0 版，在此记录以下遇到的问题。</p>
+<h2 id="Express_4-0_不再内置_connect_中间件">Express 4.0 不再内置 connect 中间件</h2>
+<p>这是影响比较大的一个修改，原先的各种 connect 中间件都需要单独 <code>require</code> 再使用。以下是修改前后的中间件对应关系:</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+6
+</pre></td><td class="code"><pre>express.favicon        === <span class="built_in">require</span>(<span class="string">'static-favicon'</span>)
+express.logger         === <span class="built_in">require</span>(<span class="string">'morgan'</span>)
+express.json           === <span class="built_in">require</span>(<span class="string">'body-parser'</span>).json
+express.urlencoded     === <span class="built_in">require</span>(<span class="string">'body-parser'</span>).urlencoded
+express.methodOverride === <span class="built_in">require</span>(<span class="string">'method-override'</span>)
+express.static         === <span class="built_in">require</span>(<span class="string">'serve-static'</span>)
+</pre></td></tr></table></figure>
+
+<p>看起来复杂，实际上只要做个字符串替换就成了。完整列表参考 <a href="https://github.com/senchalabs/connect?source=c#middleware" target="_blank">connect 中间件列表</a>。</p>
+<h2 id="不再需要_app-use(app-router)">不再需要 <code>app.use(app.router)</code></h2>
+<p>影响第二大的更新，express 3.x 中，<code>app.get</code> 方法插入中间件的执行时机是由 <code>app.use(app.router)</code> 的位置决定的，例如:</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+6
+7
+8
+9
+</pre></td><td class="code"><pre>app.use(app.router);
+app.use(<span class="function"><span class="keyword">function</span> <span class="params">(req, res, next)</span> {</span>
+    console.log(<span class="string">'foo'</span>);
+    next();
+});
+app.get(<span class="string">'/'</span>, <span class="function"><span class="keyword">function</span> <span class="params">(req, res, next)</span> {</span>
+    console.log(<span class="string">'bar'</span>);
+    res.send(<span class="number">200</span>);
+});
+</pre></td></tr></table></figure>
+
+<p>上面代码在 express 3.x 中的 console 输出是:</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre>1
+2
+</pre></td><td class="code"><pre>bar
+foo
+</pre></td></tr></table></figure>
+
+<p>Express 4.0 不需要再显式引入 <code>app.router</code>，因此上面代码删除掉第一行后，在 express 4.0 中的 console 输出是:</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre>1
+2
+</pre></td><td class="code"><pre>foo
+bar
+</pre></td></tr></table></figure>
+
+<p>升级到 4.0 不仅仅是简单的删除 <code>app.use(app.router)</code> 就行了，一定要仔细检查代码会不会受到中间件执行顺序的影响。</p>
+<h2 id="删除了_app-configure">删除了 <code>app.configure</code></h2>
+<p>下面两段代码在 express 3.0 中的作用完全相同，express 推荐使用第二种写法，第一种写法在 4.0 中被取消了。</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+6
+7
+8
+9
+</pre></td><td class="code"><pre><span class="comment">// 写法一</span>
+app.configure(<span class="string">'development'</span>, <span class="function"><span class="keyword">function</span> <span class="params">()</span> {</span>
+    <span class="comment">// ...</span>
+});
+
+<span class="comment">// 写法二</span>
+<span class="keyword">if</span> (<span class="string">'development'</span> === app.get(<span class="string">'env'</span>)) {
+    <span class="comment">// ...</span>
+}
+</pre></td></tr></table></figure>
+
+<h2 id="删除了_express-createServer">删除了 <code>express.createServer</code></h2>
+<p>直接用 <code>express()</code> 来代替 <code>express.createServer()</code></p>
+<h2 id="其他">其他</h2>
+<p>其余还有一些细节上的修改，例如移除了 <code>res.on(&#39;header&#39;)</code>、<code>res.charset</code>，将 <code>res.headerSent</code> 改为 <code>res.headersSent</code> 等等。可以查看详细的升级教程 <a href="https://github.com/visionmedia/express/wiki/Migrating%20from%203.x%20to%204.x" target="_blank">Migrating from 3.x to 4.x</a>。</p>
+<p>参考文献:</p>
+<ul>
+<li><a href="https://github.com/senchalabs/connect?source=c#middleware" target="_blank">connect 中间件列表</a></li>
+<li><a href="https://github.com/visionmedia/express/wiki/Migrating%20from%203.x%20to%204.x" target="_blank">Migrating from 3.x to 4.x</a></li>
+</ul>
+]]></content>
+    
+    
+      <category term="node" scheme="http://lostjs.com/tags/node/"/>
+    
+  </entry>
+  
+  <entry>
+    <title><![CDATA[用 node 代替 nginx 做请求分发]]></title>
+    <link href="http://lostjs.com/2014/04/23/replace-nginx-by-node/"/>
+    <id>http://lostjs.com/2014/04/23/replace-nginx-by-node/</id>
+    <published>2014-04-23T14:18:30.000Z</published>
+    <updated>2014-04-23T15:06:26.000Z</updated>
+    <content type="html"><![CDATA[<p>对于一个大型 Web 网站来说，网站往往是由多套代码来提供服务，并通过 nginx 等 HTTP Server 把请求分发到各个 Web 服务器上。例如:</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+</pre></td><td class="code"><pre>                      +–––––––––––––––––+
+               /a     <span class="string">|                 |</span>
+      +–––––––––––––––+  <span class="number">10.0</span>.<span class="number">1.1</span>:<span class="number">8080</span>  <span class="string">|</span>
+      <span class="string">|               |                 |</span>
+      <span class="string">|               +–––––––––––––––––+</span>
+      <span class="string">|</span>
++–––––+–––+           +–––––––––––––––––+
+<span class="string">|         |    /b     |                 |</span>
+<span class="string">|  nginx  +–––––––––––+  10.0.1.2:8081  |</span>
+<span class="string">|         |           |                 |</span>
++–––––+–––+           +–––––––––––––––––+
+      <span class="string">|</span>
+      <span class="string">|               +–––––––––––––––––+</span>
+      <span class="string">|        /c     |                 |</span>
+      +–––––––––––––––+  <span class="number">10.0</span>.<span class="number">1.3</span>:<span class="number">8082</span>  <span class="string">|</span>
+                      <span class="string">|                 |</span>
+                      +–––––––––––––––––+
+</pre></td></tr></table></figure>
+
+<p>这样在本地开发的时候，开发者为了搭建一个完整的开发环境，就需要装一个 nginx。团队人多了以后，nginx 的规则同步是个让人头疼的事情，特别是配置越来越复杂的时候，每个新同事进来都要折腾一下。</p>
+<h2 id="node_proxy_代替_nginx">node proxy 代替 nginx</h2>
+<p>如果能用 node 实现 nginx 的请求分发功能，那就可以把整个请求分发服务提交到代码仓库，分发规则修改后团队成员就只需要更新本地代码即可。</p>
+<p>Google 了一下找到了 <a href="https://github.com/nodejitsu/node-http-proxy" target="_blank">node-http-proxy</a> 这个模块，可以实现 http 代理功能。用 node-http-proxy 可以很容易的实现 nginx 的请求分发功能:</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+</pre></td><td class="code"><pre><span class="keyword">var</span> servers = {
+    a: <span class="string">'10.0.1.1:8080'</span>,
+    b: <span class="string">'10.0.1.2:8081'</span>,
+    c: <span class="string">'10.0.1.3:8082'</span>
+};
+
+<span class="keyword">var</span> proxy = <span class="built_in">require</span>(<span class="string">'http-proxy'</span>).createProxyServer(); <span class="comment">// proxy 服务</span>
+<span class="keyword">var</span> http = <span class="built_in">require</span>(<span class="string">'http'</span>);
+http.createServer(<span class="function"><span class="keyword">function</span> <span class="params">(req, res)</span> {</span>
+    <span class="keyword">var</span> target = <span class="literal">null</span>;
+
+    <span class="comment">// 根据 url 设置目标服务地址</span>
+    <span class="keyword">if</span> (req.url.indexOf(<span class="string">'/a'</span>) === <span class="number">0</span>) {
+        target = servers.a;
+    } <span class="keyword">else</span> <span class="keyword">if</span> (req.url.indexOf(<span class="string">'/b'</span>) === <span class="number">0</span>) {
+        target = servers.b;
+    } <span class="keyword">else</span> {
+        target = servers.c;
+    }
+
+    <span class="comment">// 分发请求</span>
+    proxy.web(req, res, {
+        target: c
+    });
+}).listen(<span class="number">8000</span>);
+</pre></td></tr></table></figure>
+
+]]></content>
+    
+    
+      <category term="node" scheme="http://lostjs.com/tags/node/"/>
+    
+  </entry>
+  
+  <entry>
+    <title><![CDATA[把 blog 从 octopress 迁移到 hexo]]></title>
+    <link href="http://lostjs.com/2014/04/22/from-octopress-to-hexo/"/>
+    <id>http://lostjs.com/2014/04/22/from-octopress-to-hexo/</id>
+    <published>2014-04-22T13:39:27.000Z</published>
+    <updated>2014-04-23T14:03:36.000Z</updated>
+    <content type="html"><![CDATA[<p>之前用的一直用 <a href="http://octopress.org" target="_blank">octopress</a> 来写 blog。对于我来说 octopress 有个最大的缺点，就是它是 ruby 写的。导致我经常就要去搞搞 ruby 的版本啊、gem 啊什么杂七杂八的事情。今天无意间看到了一个 node 写的博客工具 <a href="http://hexo.io" target="_blank">hexo</a>，功能类似于 octorepss 但是部署成本比 octopress 低了不少，于是花了 15 分钟把整个博客从 octopress 迁移到了 hexo 上面。</p>
+<p>和 octopress 类似，hexo 也是一个静态页面生成工具。它允许用 markdown 语法来写文章，并且生成并上传整个网站到 github。它和 octopress 有着完全一样的文章格式，所以整个迁移过程非常轻松。</p>
+<h3 id="安装_hexo">安装 hexo</h3>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre>1
+2
+</pre></td><td class="code"><pre><span class="comment"># 国内网速慢可以尝试加上 --registry=http://r.cnpmjs.org 来使用国内镜像加速</span>
+npm install -g hexo
+</pre></td></tr></table></figure>
+
+<h3 id="初始化目录">初始化目录</h3>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre>1
+</pre></td><td class="code"><pre>hexo init blog && <span class="built_in">cd</span> blog
+</pre></td></tr></table></figure>
+
+<h3 id="迁移_octopress_的文章">迁移 octopress 的文章</h3>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre>1
+2
+</pre></td><td class="code"><pre>rm -rf <span class="built_in">source</span>/_posts
+cp <span class="operator">-a</span> OCTOPRESS_BLOG/<span class="built_in">source</span>/_posts <span class="built_in">source</span>/
+</pre></td></tr></table></figure>
+
+<h3 id="修改链接规则">修改链接规则</h3>
+<p>需要修改 <code>_config.yml</code> 中 <code>new_post_name</code> 一行:</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre>1
+</pre></td><td class="code"><pre><span class="symbol">new_post_name:</span> <span class="symbol">:year-</span><span class="symbol">:month-</span><span class="symbol">:day-</span><span class="symbol">:title</span>.md
+</pre></td></tr></table></figure>
+
+<h3 id="修改博客信息">修改博客信息</h3>
+<p>例如博客名称、网站地址等等，这些内容都在 <code>_config.yml</code> 中。另外还要将配置文件最后的 <code>deploy</code> 信息修改成 github 地址:</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+</pre></td><td class="code"><pre>deploy:
+  repo: git@github.com:USER/REPO
+  <span class="class"><span class="keyword">type</span>: <span class="title">github</span></span>
+  brandh: master
+</pre></td></tr></table></figure>
+
+<p>如果博客用了顶级域名，还需要在 <code>source</code> 目录下新建一个 <code>CNAME</code> 文件:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre>1
+</pre></td><td class="code"><pre><span class="built_in">echo</span> <span class="string">"lostjs.com"</span> &gt; <span class="built_in">source</span>/CNAME
+</pre></td></tr></table></figure>
+
+<h3 id="预览效果">预览效果</h3>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre>1
+2
+</pre></td><td class="code"><pre>hexo generate
+hexo server
+</pre></td></tr></table></figure>
+
+<p>然后浏览器访问本地 4000 端口即可。<code>hexo server</code> 和 octopress 的 <code>rake preview</code> 命令类似，会自动监听本地文件修改，但是如果修改的是 <code>_config.yml</code> 的话就需要重新 <code>hexo generate</code> 才能看到效果。</p>
+<h3 id="发布">发布</h3>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre>1
+</pre></td><td class="code"><pre>hexo deploy
+</pre></td></tr></table></figure>
+
+<p>迁移完毕，浏览器中试一下，原先的 url 都能正常访问。</p>
+<h1 id="整体感受">整体感受</h1>
+<p>hexo 给我的第一感受就是简单，不像 octopress 一样，hexo init 后生成的文件非常少，一眼看过去清除明了。在任何一台机器上只需要 <code>npm install -g hexo</code> 之后就能使用，不像 ruby 一样还需要搞 rbenv 并编译 ruby 之类的事情。另外一个感受就是速度快，不管是 generate 还是 deploy 都比 octopress 快了不少。整体来说 hexo 是一个非常值得一试的博客工具。</p>
+]]></content>
+    
+    
+      <category term="hexo" scheme="http://lostjs.com/tags/hexo/"/>
+    
+  </entry>
+  
+  <entry>
+    <title><![CDATA[异步、promise 与缓存]]></title>
+    <link href="http://lostjs.com/2014/04/21/a-simple-promise-cache-by-lru-cache/"/>
+    <id>http://lostjs.com/2014/04/21/a-simple-promise-cache-by-lru-cache/</id>
+    <published>2014-04-21T14:01:00.000Z</published>
+    <updated>2014-04-23T14:03:32.000Z</updated>
+    <content type="html"><![CDATA[<h2 id="异步操作缓存">异步操作缓存</h2>
+<p>在 Node 开发过程中要常常和异步调用打交道，例如发送 http 请求、读取文件内容等。有时我们需要将这些异步 I/O 操作的结果缓存下来，使得程序运行的速度更快，例如:</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+</pre></td><td class="code"><pre><span class="keyword">var</span> fileContent = <span class="literal">null</span>;
+<span class="function"><span class="keyword">function</span> <span class="title">readFile</span><span class="params">(callback)</span> {</span>
+    <span class="keyword">if</span> (fileContent !== <span class="literal">null</span>) {
+        process.nextTick(<span class="function"><span class="keyword">function</span> <span class="params">()</span> {</span>
+            callback(<span class="literal">null</span>, fileContent);
+        });
+        <span class="keyword">return</span>;
+    }
+
+    fs.readFile(FILE_PATH, <span class="function"><span class="keyword">function</span> <span class="params">(err, content)</span> {</span>
+        <span class="keyword">if</span> (err) {
+            callback(err);
+            <span class="keyword">return</span>;
+        }
+
+        fileContent = content;
+        callback(<span class="literal">null</span>, content);
+    });
+}
+</pre></td></tr></table></figure>
+
+<p>上面的代码用 <code>fileContent</code> 变量做了一个简单的内存缓存，在 <code>readFile</code> 函数中，如果发现缓存中存在内容，则跳过文件读取操作。</p>
+<p>这是个非常简单的缓存应用案例，我们可以将代码中的缓存逻辑抽出来，与业务逻辑分离，成为一个通用的缓存方法 <code>cacheAsync</code>:</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+</pre></td><td class="code"><pre><span class="function"><span class="keyword">function</span> <span class="title">cacheAsync</span><span class="params">(logical)</span> {</span>
+    <span class="keyword">var</span> cache = <span class="literal">null</span>;
+    <span class="keyword">return</span> <span class="function"><span class="keyword">function</span> <span class="params">(callback)</span> {</span>
+        <span class="keyword">if</span> (cache) {
+            process.nextTick(<span class="function"><span class="keyword">function</span> <span class="params">()</span> {</span>
+                callback(<span class="literal">null</span>, cache);
+            });
+            <span class="keyword">return</span>;
+        }
+
+        logical(<span class="function"><span class="keyword">function</span> <span class="params">(err, result)</span> {</span>
+            <span class="keyword">if</span> (err) {
+                logical(err);
+                <span class="keyword">return</span>;
+            }
+
+            cache = result;
+            callback(<span class="literal">null</span>, result);
+        });
+    };
+}
+
+<span class="keyword">var</span> readFile = cacheAsync(<span class="function"><span class="keyword">function</span> <span class="params">(callback)</span> {</span>
+    fs.readFile(FILE_PATH, callback);
+});
+
+readFile(<span class="function"><span class="keyword">function</span> <span class="params">(err, content)</span> {</span>
+    <span class="keyword">if</span> (err) {
+        <span class="keyword">throw</span> err;
+        <span class="keyword">return</span>;
+    }
+
+    console.log(<span class="string">'file:'</span>, content);
+});
+</pre></td></tr></table></figure>
+
+<p>使用 <code>cacheAsync</code> 方法可以很容易的给一个异步回调函数加上缓存。</p>
+<h2 id="promise">promise</h2>
+<p><code>promise</code> 是和上面代码中示范的 callback 异步回调方式截然不同的另一种异步范式。<code>promise</code> 范式下的异步函数不再接收一个 callback 函数，而是返回一个 promise 对象。promise 对象通过 <code>then</code> 方法来绑定回调函数，通过 <code>catch</code> 方法绑定错误处理函数。</p>
+<p>nodejs 目前有很多个 promise 异步范式的库，最流行的是 <code>q</code>。这里以 q 为例，示范一个简单的 promise 异步范式:</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+</pre></td><td class="code"><pre><span class="keyword">var</span> readFile = <span class="function"><span class="keyword">function</span> <span class="params">()</span> {</span>
+    <span class="comment">// q.nfcall 使一个 callback 风格的异步函数返回一个 promise 对象</span>
+    <span class="keyword">return</span> q.nfcall(fs.readFile, FILE_PATH);
+};
+
+<span class="comment">// 下面这行看起来就和同步调用一样</span>
+<span class="keyword">var</span> fileContent = readFile();
+
+fileContent.then(<span class="function"><span class="keyword">function</span> <span class="params">(content)</span> {</span>
+    console.log(<span class="string">'file:'</span>, content);
+}).catch(<span class="function"><span class="keyword">function</span> <span class="params">(err)</span> {</span>
+    console.log(err);
+});
+</pre></td></tr></table></figure>
+
+<p>看起来是不是感觉代码更复杂了？除了能看到异常逻辑和正常流程被分离了以外，似乎没有太多好处？那么看一个更复杂的例子，这个例子尝试从两个数据源读取用户信息:</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+</pre></td><td class="code"><pre><span class="function"><span class="keyword">function</span> <span class="title">getUserSync</span><span class="params">()</span> {</span>
+    <span class="keyword">var</span> user = fetchUserFromWeiboSync();
+
+    <span class="keyword">if</span> (!user) {
+        user = fetchUserFromRenrenSync();
+    }
+
+    <span class="keyword">if</span> (!user) {
+        <span class="keyword">throw</span> <span class="keyword">new</span> <span class="built_in">Error</span>(<span class="number">404</span>);
+    }
+
+    <span class="keyword">return</span> user;
+}
+</pre></td></tr></table></figure>
+
+<p>callback 回调版本，一个常见的 callback hell:</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+</pre></td><td class="code"><pre><span class="function"><span class="keyword">function</span> <span class="title">getUserAsync</span><span class="params">(callback)</span> {</span>
+    fetchUserFromWeiboAsync(<span class="function"><span class="keyword">function</span> <span class="params">(err)</span> {</span>
+        <span class="keyword">if</span> (err) {
+            fetchUserFromRenrenAsync(<span class="function"><span class="keyword">function</span> <span class="params">(err, user)</span> {</span>
+                <span class="keyword">if</span> (err) {
+                    callback(<span class="keyword">new</span> <span class="built_in">Error</span>(<span class="number">404</span>));
+                } <span class="keyword">else</span> {
+                    callback(<span class="literal">null</span>, user);
+                }
+            });
+        } <span class="keyword">else</span> {
+            callback(<span class="literal">null</span>, user);
+        }
+    })
+}
+</pre></td></tr></table></figure>
+
+<p>promise 版本，代码之少令人惊讶:</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre>1
+2
+3
+</pre></td><td class="code"><pre><span class="function"><span class="keyword">function</span> <span class="title">getUserQ</span><span class="params">()</span> {</span>
+    <span class="keyword">return</span> fetchUserFromWeiboQ().catch(fetchUserFromRenrenQ);
+}
+</pre></td></tr></table></figure>
+
+<h2 id="promise_与缓存">promise 与缓存</h2>
+<p>给一个 promise 范式下的异步函数加缓存是一件非常轻松的事情，因为你不需要处理任何的异常流程:</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+</pre></td><td class="code"><pre><span class="keyword">var</span> q = <span class="built_in">require</span>(<span class="string">'q'</span>);
+
+<span class="function"><span class="keyword">function</span> <span class="title">cacheQ</span><span class="params">(logical)</span> {</span>
+    <span class="keyword">var</span> cache = <span class="literal">null</span>;
+
+    <span class="keyword">return</span> <span class="function"><span class="keyword">function</span> <span class="params">()</span> {</span>
+        <span class="keyword">if</span> (cache !== <span class="literal">null</span>) {
+            <span class="keyword">return</span> q(cache);
+        }
+
+        <span class="comment">// 这里不需要再处理任何的异常，缓存方法和程序逻辑进一步解耦</span>
+        <span class="keyword">return</span> logical().then(<span class="function"><span class="keyword">function</span> <span class="params">(result)</span> {</span>
+            cache = result;
+            <span class="comment">// 这里必须 return，因为这里的返回值会作为参数传递给下一个 then 方法绑定的回调函数</span>
+            <span class="keyword">return</span> result;
+        });
+    };
+}
+
+<span class="keyword">var</span> readFile = cacheQ(<span class="function"><span class="keyword">function</span> <span class="params">()</span> {</span>
+    <span class="comment">// q.nfcall 使一个 callback 风格的异步函数返回一个 promise 对象</span>
+    <span class="keyword">return</span> q.nfcall(fs.readFile, FILE_PATH);
+});
+</pre></td></tr></table></figure>
+
+<h2 id="更灵活的缓存">更灵活的缓存</h2>
+<p>在实际应用中，一个缓存函数还应当支持以下特性:</p>
+<ol>
+<li>缓存应该是一个 key-value 存储，而不是只能缓存一个值</li>
+<li>避免使用一个简单的内存对象来做缓存，更好的选择有 lru-cache、redis 以及 memcached 等</li>
+<li>缓存函数应该对逻辑函数透明，即逻辑函数是否被缓存，不应该影响整个程序的执行结果</li>
+</ol>
+<p>以下给一个实际项目中应用的例子:</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+</pre></td><td class="code"><pre><span class="keyword">var</span> q = <span class="built_in">require</span>(<span class="string">'q'</span>);
+<span class="keyword">var</span> LRU = <span class="built_in">require</span>(<span class="string">'lru-cache'</span>);
+
+<span class="function"><span class="keyword">function</span> <span class="title">cacheQ</span><span class="params">(logical, key)</span> {</span>
+    <span class="keyword">var</span> cache = <span class="keyword">new</span> LRU({
+        max: <span class="number">100</span>, <span class="comment">// 最大缓存数量，防止内存泄露</span>
+        maxAge: <span class="number">60000</span> <span class="comment">// 一分钟过期</span>
+    });
+
+    <span class="keyword">return</span> <span class="function"><span class="keyword">function</span> <span class="params">()</span> {</span>
+        <span class="keyword">var</span> args = <span class="built_in">arguments</span>;
+        key = <span class="keyword">typeof</span> key === <span class="string">'function'</span> ? key.apply(<span class="keyword">this</span>, args) : <span class="string">'__default__'</span>;
+
+        <span class="comment">// 这里支持 key 作为一个 promise 对象，所以需要用 q 来包装这个对象</span>
+        <span class="keyword">return</span> q(key).then(<span class="function"><span class="keyword">function</span> <span class="params">(key)</span> {</span>
+            <span class="keyword">if</span> (cache.has(key)) {
+                <span class="keyword">return</span> cache.get(key);
+            }
+
+            <span class="keyword">return</span> logical.apply(<span class="keyword">this</span>, args).then(<span class="function"><span class="keyword">function</span> <span class="params">(result)</span> {</span>
+                cache.set(key, result);
+                <span class="keyword">return</span> result;
+            });
+        }.bind(<span class="keyword">this</span>)); <span class="comment">// 注意 this 的传递</span>
+    };
+}
+
+<span class="keyword">var</span> readFileCached = cacheQ(<span class="function"><span class="keyword">function</span> <span class="params">(path)</span> {</span>
+    <span class="keyword">return</span> q.nfcall(fs.readFile, path);
+}, <span class="function"><span class="keyword">function</span> <span class="params">(path)</span> {</span>
+    <span class="keyword">return</span> path;
+});
+</pre></td></tr></table></figure>
+
+]]></content>
+    
+    
+      <category term="node" scheme="http://lostjs.com/tags/node/"/>
+    
+  </entry>
+  
+  <entry>
+    <title><![CDATA[Mac 下使用代理连接 docker 镜像服务器]]></title>
+    <link href="http://lostjs.com/2014/02/26/docker-behind-gfw/"/>
+    <id>http://lostjs.com/2014/02/26/docker-behind-gfw/</id>
+    <published>2014-02-26T03:16:00.000Z</published>
+    <updated>2014-04-22T15:11:36.000Z</updated>
+    <content type="html"><![CDATA[<p>Docker 是个非常牛逼的轻量级虚拟化解决方案，它可以将整个操作系统打成一个非常小的镜像，并且直接跑在宿主的 Linux Kernel 之上。然而在国内因为可恶的 GFW 存在，使用 docker 成了一件非常困难的事情。具体表现在使用 <code>docker search</code> 和 <code>docker pull</code> 的时候连接非常不稳定，这一刻我又深深的感觉到了作为一名天朝程序员的悲哀…</p>
+<h3 id="使用_HTTP_代理连接_docker_中央服务器">使用 HTTP 代理连接 docker 中央服务器</h3>
+<p>如果你的宿主操作系统是 linux 那方法就很简单了，直接通过 <code>HTTP_PROXY=127.0.0.1:8118 HTTPS_PROXY=127.0.0.1:8118 docker -d</code> 的形式启动服务即可.</p>
+<h3 id="boot2docker_使用代理的方法"><code>boot2docker</code> 使用代理的方法</h3>
+<p>Mac 下使用 docker 就必须用 <code>boot2docker</code> 来创建一个 Virtual Box 虚拟机提供 Linux 宿主环境，要用代理就略微折腾一点。如果只是临时的想用一下，可以通过以下命令来搞定:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+</pre></td><td class="code"><pre>boot2docker ssh <span class="comment"># 密码是 tcuser</span>
+<span class="built_in">sudo</span> vi /var/lib/boot2docker/profile
+<span class="comment"># export HTTP_PROXY=10.0.1.64:8118</span>
+<span class="comment"># export HTTPS_PROXY=10.0.1.64:8118</span>
+/usr/local/etc/init.d/docker restart
+</pre></td></tr></table></figure>
+
+]]></content>
+    
+    
+      <category term="docker" scheme="http://lostjs.com/tags/docker/"/>
+    
+  </entry>
+  
+  <entry>
+    <title><![CDATA[Node 出现 uncaughtException 之后的优雅退出方案]]></title>
+    <link href="http://lostjs.com/2014/01/25/handle-exception-in-node/"/>
+    <id>http://lostjs.com/2014/01/25/handle-exception-in-node/</id>
+    <published>2014-01-25T04:18:00.000Z</published>
+    <updated>2014-04-23T14:03:29.000Z</updated>
+    <content type="html"><![CDATA[<p>Node 的异步特性是它最大的魅力，但是在带来便利的同时也带来了不少麻烦和坑，错误捕获就是一个。由于 Node 的异步特性，导致我们无法使用 try/catch 来捕获回调函数中的异常，例如:</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+</pre></td><td class="code"><pre><span class="keyword">try</span> {
+    console.log(<span class="string">'进入 try/catch'</span>);
+    <span class="built_in">require</span>(<span class="string">'fs'</span>).stat(<span class="string">'SOME_FILE_DOES_NOT_EXIST'</span>, <span class="function"><span class="keyword">function</span> <span class="title">readCallback</span><span class="params">(err, content)</span> {</span>
+        <span class="keyword">if</span> (err) {
+            <span class="keyword">throw</span> err; <span class="comment">// 抛出异常</span>
+        }
+    });
+} <span class="keyword">catch</span> (e) {
+    <span class="comment">// 这里捕获不到 readCallback 函数中抛出的异常</span>
+} <span class="keyword">finally</span> {
+    console.log(<span class="string">'离开 try/catch'</span>);
+}
+</pre></td></tr></table></figure>
+
+<p>运行结果是:</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+6
+7
+</pre></td><td class="code"><pre>进入 <span class="keyword">try</span>/<span class="keyword">catch</span>
+离开 <span class="keyword">try</span>/<span class="keyword">catch</span>
+
+test.js:<span class="number">7</span>
+            <span class="keyword">throw</span> err; <span class="comment">// 抛出异常</span>
+                  ^
+<span class="built_in">Error</span>: ENOENT, stat <span class="string">'SOME_FILE_DOES_NOT_EXIST'</span>
+</pre></td></tr></table></figure>
+
+<p>上面代码中由于 <code>fs.stat</code> 去查询一个不存在的文件的状态，导致 <code>readCallback</code> 抛出了一个异常。由于 <code>fs.read</code> 的异步特性，<code>readCallback</code> 函数的调用发生在 <code>try/catch</code> 块结束之后，所以该异常不会被 try/catch 捕获。之后 Node 会触发 <code>uncaughtException</code> 事件，如果这个事件依然没有得到响应，整个进程(<code>process</code>)就会 crash。</p>
+<p>程序员永远无法保证代码中不出现 <code>uncaughtException</code>，即便是自己代码写的足够小心，也不能保证用的第三方模块没有 bug，例如:</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+6
+7
+8
+9
+</pre></td><td class="code"><pre><span class="keyword">var</span> deserialize = <span class="built_in">require</span>(<span class="string">'deserialize'</span>); <span class="comment">// 假设 deserialize 是一个带有 bug 的第三方模块</span>
+
+<span class="comment">// app 是一个 express 服务对象</span>
+app.get(<span class="string">'/users'</span>, <span class="function"><span class="keyword">function</span> <span class="params">(req, res)</span> {</span>
+    mysql.query(<span class="string">'SELECT * FROM user WHERE id=1'</span>, <span class="function"><span class="keyword">function</span> <span class="params">(err, user)</span> {</span>
+        <span class="keyword">var</span> config = deserialize(user.config); <span class="comment">// 假如这里触发了 deserialize 的 bug</span>
+        res.send(config);
+    });
+});
+</pre></td></tr></table></figure>
+
+<p>如果不幸触发了 <code>deserialize</code> 模块的 bug，这里就会抛出一个异常，最终结果是整个服务 crash。</p>
+<p>当这种情况发生在 Web 服务上时结果是灾难性的。<code>uncaughtException</code> 错误会导致当前的所有的用户连接都被中断，甚至不能返回一个正常的 HTTP 错误码，用户只能等到浏览器超时才能看到一个 <code>no data received</code> 错误。</p>
+<p>这是一种非常野蛮粗暴的异常处理机制，任何线上服务都不应该因为 <code>uncaughtException</code> 导致服务器崩溃。一个友好的错误处理机制应该满足三个条件:</p>
+<ol>
+<li>对于引发异常的用户，返回 500 页面</li>
+<li>其他用户不受影响，可以正常访问</li>
+<li>不影响整个进程的正常运行</li>
+</ol>
+<p>很遗憾的是，保证 <code>uncaughtException</code> 不影响整个进程的健康运转是不可能的。当 Node 抛出 <code>uncaughtException</code> 异常时就会丢失当前环境的堆栈，导致 Node 不能正常进行内存回收。也就是说，每一次 <code>uncaughtException</code> 都有可能导致内存泄露。</p>
+<p>既然如此，退而求其次，我们可以在满足前两个条件的情况下退出进程以便重启服务。</p>
+<h2 id="用_domain_来捕获异步异常">用 domain 来捕获异步异常</h2>
+<p>普遍的思路是，如果可以通过某种方式来捕获回调函数中的异常，那么就不会有 <code>uncaughtException</code> 错误导致的崩溃。为了解决这个问题，Node 0.8 之后的版本新增了 <code>domain</code> 模块，它可以用来捕获回调函数中抛出的异常。</p>
+<p><code>domain</code> 主要的 API 有 <code>domain.run</code> 和 <code>error</code> 事件。简单的说，通过 <code>domain.run</code> 执行的函数中引发的异常都可以通过 <code>domain</code> 的 <code>error</code> 事件捕获，例如:</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+</pre></td><td class="code"><pre><span class="keyword">var</span> domain = <span class="built_in">require</span>(<span class="string">'domain'</span>);
+<span class="keyword">var</span> d = domain.create();
+d.run(<span class="function"><span class="keyword">function</span> <span class="params">()</span> {</span>
+    setTimeout(<span class="function"><span class="keyword">function</span> <span class="params">()</span> {</span>
+        <span class="keyword">throw</span> <span class="keyword">new</span> <span class="built_in">Error</span>(<span class="string">'async error'</span>); <span class="comment">// 抛出一个异步异常</span>
+    }, <span class="number">1000</span>);
+});
+
+d.on(<span class="string">'error'</span>, <span class="function"><span class="keyword">function</span> <span class="params">(err)</span> {</span>
+    console.log(<span class="string">'catch err:'</span>, err); <span class="comment">// 这里可以捕获异步异常</span>
+});
+</pre></td></tr></table></figure>
+
+<p>通过 <code>domain</code> 模块，以及 JavaScript 的词法作用域特性，可以很轻易的为引发异常的用户返回 500 页面。以 express 为例:</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+</pre></td><td class="code"><pre><span class="keyword">var</span> app = express();
+<span class="keyword">var</span> server = <span class="built_in">require</span>(<span class="string">'http'</span>).createServer(app);
+<span class="keyword">var</span> domain = <span class="built_in">require</span>(<span class="string">'domain'</span>);
+
+app.use(<span class="function"><span class="keyword">function</span> <span class="params">(req, res, next)</span> {</span>
+    <span class="keyword">var</span> reqDomain = domain.create();
+    reqDomain.on(<span class="string">'error'</span>, <span class="function"><span class="keyword">function</span> <span class="params">(err)</span> {</span> <span class="comment">// 下面抛出的异常在这里被捕获</span>
+        res.send(<span class="number">500</span>, err.stack); <span class="comment">// 成功给用户返回了 500</span>
+    });
+
+    reqDomain.run(next);
+});
+
+app.get(<span class="string">'/'</span>, <span class="function"><span class="keyword">function</span> <span class="params">()</span> {</span>
+    setTimeout(<span class="function"><span class="keyword">function</span> <span class="params">()</span> {</span>
+        <span class="keyword">throw</span> <span class="keyword">new</span> <span class="built_in">Error</span>(<span class="string">'async exception'</span>); <span class="comment">// 抛出一个异步异常</span>
+    }, <span class="number">1000</span>);
+});
+</pre></td></tr></table></figure>
+
+<p>上面的代码将 domain 作为一个中间件来使用，保证之后 express 所有的中间件都在 <code>domain.run</code> 函数内部执行。这些中间件内的异常都可以通过 <code>error</code> 事件来捕获。</p>
+<p>尽管借助于闭包，我们可以正常的给用户返回 500 错误，但是 <code>domain</code> 捕获到错误时依然会丢失堆栈信息，此时已经无法保证程序的健康运行，必须退出。Node http server 提供了 <code>close</code> 方法，该方法在调用时会停止 server 接收新的请求，但不会断开当前已经建立的连接。</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+</pre></td><td class="code"><pre>reqDomain.on(<span class="string">'error'</span>, <span class="function"><span class="keyword">function</span> <span class="params">()</span> {</span>
+    <span class="keyword">try</span> {
+        <span class="comment">// 强制退出机制</span>
+        <span class="keyword">var</span> killTimer = setTimeout(<span class="function"><span class="keyword">function</span> <span class="params">()</span> {</span>
+            process.exit(<span class="number">1</span>);
+        }, <span class="number">30000</span>);
+        killTimer.unref(); <span class="comment">// 非常重要</span>
+
+        <span class="comment">// 自动退出机制，停止接收新链接，等待当前已建立连接的关闭</span>
+        server.close(<span class="function"><span class="keyword">function</span> <span class="params">()</span> {</span>
+            <span class="comment">// 此时所有连接均已关闭，此时 Node 会自动退出，不需要再调用 process.exit(1) 来结束进程</span>
+        });
+    } <span class="keyword">catch</span>(e) {
+        console.log(<span class="string">'err'</span>, e.stack);
+    }
+});
+</pre></td></tr></table></figure>
+
+<p>这个例子来自 Node 的文档。其中有几个关键点：</p>
+<ul>
+<li>Node 有个非常好的特性，所有连接都被释放后进程会自动结束，所以不需要再 <code>server.close</code> 方法的回调函数中退出进程</li>
+<li>强制退出机制: 因为用户连接有可能因为某些原因无法释放，在这种情况下应该强制退出整个进程。</li>
+<li><code>killTimer.unref()</code>: 如果不使用 <code>unref</code> 方法，那么即使 server 的所有连接都关闭，Node 也会保持运行直到 <code>killTimer</code> 的回调函数被调用。<code>unref</code> 可以创建一个”不保持程序运行”的计时器。</li>
+<li>处理异常时要小心的把异常处理逻辑用 try/catch 包住，避免处理异常时抛出新的异常</li>
+</ul>
+<p>通过 <code>domain</code> 似乎就已经解决了我们的需求: 给触发异常的用户一个 500，停止接收新请求，提供正常的服务给已经建立连接的用户，直到所有请求都已结束，退出进程。但是，理想很丰满，现实很骨感，<code>domain</code> 有个最大的问题，它<a href="http://cnodejs.org/topic/516b64596d38277306407936" target="_blank">不能捕获所有的异步异常</a>！。也就是说，即使用了 <code>domain</code>，程序依然有因为 <code>uncaughtException</code> crash 的可能。</p>
+<p>所幸的是我们可以监听 <code>uncaughtException</code> 事件。</p>
+<h2 id="uncaughtException_事件"><code>uncaughtException</code> 事件</h2>
+<p><code>uncaughtException</code> 是一个非常古老的事件。当 Node 发现一个未捕获的异常时，会触发这个事件。并且如果这个事件存在回调函数，Node 就不会强制结束进程。这个特性，可以用来弥补 <code>domain</code> 的不足:</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+</pre></td><td class="code"><pre>process.on(<span class="string">'uncaughtException'</span>, <span class="function"><span class="keyword">function</span> <span class="params">(err)</span> {</span>
+    console.log(err);
+
+    <span class="keyword">try</span> {
+        <span class="keyword">var</span> killTimer = setTimeout(<span class="function"><span class="keyword">function</span> <span class="params">()</span> {</span>
+            process.exit(<span class="number">1</span>);
+        }, <span class="number">30000</span>);
+        killTimer.unref();
+
+        server.close();
+    } <span class="keyword">catch</span> (e) {
+        console.log(<span class="string">'error when exit'</span>, e.stack);
+    }
+});
+</pre></td></tr></table></figure>
+
+<p><code>uncaughtException</code> 事件的缺点在于无法为抛出异常的用户请求返回一个 500 错误，这是由于 <code>uncaughtException</code> 丢失了当前环境的上下文，比如下面的例子就是它做不到的:</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+</pre></td><td class="code"><pre>app.get(<span class="string">'/'</span>, <span class="function"><span class="keyword">function</span> <span class="params">(req, res)</span> {</span>
+    setTimeout(<span class="function"><span class="keyword">function</span> <span class="params">()</span> {</span>
+        <span class="keyword">throw</span> <span class="keyword">new</span> <span class="built_in">Error</span>(<span class="string">'async error'</span>); <span class="comment">// uncaughtException, 导致 req 的引用丢失</span>
+        res.send(<span class="number">200</span>);
+    }, <span class="number">1000</span>);
+});
+
+process.on(<span class="string">'uncaughtException'</span>, <span class="function"><span class="keyword">function</span> <span class="params">(err)</span> {</span>
+    res.send(<span class="number">500</span>); <span class="comment">// 做不到，拿不到当前请求的 res 对象</span>
+});
+</pre></td></tr></table></figure>
+
+<p>最终出错的用户只能等待浏览器超时。</p>
+<h2 id="domain_+_uncaughtException"><code>domain</code> + <code>uncaughtException</code></h2>
+<p>所以，我们可以结合两种异常捕获机制，用 <code>domain</code> 来捕获大部分的异常，并且提供友好的 500 页面以及优雅退出。对于剩下的异常，通过 <code>uncaughtException</code> 事件来避免服务器直接 crash。</p>
+<p>代码如下:</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+</pre></td><td class="code"><pre><span class="keyword">var</span> app = express();
+<span class="keyword">var</span> server = <span class="built_in">require</span>(<span class="string">'http'</span>).create(app);
+<span class="keyword">var</span> domain = <span class="built_in">require</span>(<span class="string">'domain'</span>);
+
+<span class="comment">// 使用 domain 来捕获大部分异常</span>
+app.use(<span class="function"><span class="keyword">function</span> <span class="params">(req, res, next)</span> {</span>
+    <span class="keyword">var</span> reqDomain = domain.create();
+    reqDomain.on(<span class="string">'error'</span>, <span class="function"><span class="keyword">function</span> <span class="params">()</span> {</span>
+        <span class="keyword">try</span> {
+            <span class="keyword">var</span> killTimer = setTimeout(<span class="function"><span class="keyword">function</span> <span class="params">()</span> {</span>
+                process.exit(<span class="number">1</span>);
+            }, <span class="number">30000</span>);
+            killTimer.unref();
+
+            server.close();
+
+            res.send(<span class="number">500</span>);
+        } <span class="keyword">catch</span> (e) {
+            console.log(<span class="string">'error when exit'</span>, e.stack);
+        }
+    });
+
+    reqDomain.run(next);
+});
+
+<span class="comment">// uncaughtException 避免程序崩溃</span>
+process.on(<span class="string">'uncaughtException'</span>, <span class="function"><span class="keyword">function</span> <span class="params">(err)</span> {</span>
+    console.log(err);
+
+    <span class="keyword">try</span> {
+        <span class="keyword">var</span> killTimer = setTimeout(<span class="function"><span class="keyword">function</span> <span class="params">()</span> {</span>
+            process.exit(<span class="number">1</span>);
+        }, <span class="number">30000</span>);
+        killTimer.unref();
+
+        server.close();
+    } <span class="keyword">catch</span> (e) {
+        console.log(<span class="string">'error when exit'</span>, e.stack);
+    }
+});
+</pre></td></tr></table></figure>
+
+<h2 id="其他的一些问题">其他的一些问题</h2>
+<h3 id="express_中异常的处理"><code>express</code> 中异常的处理</h3>
+<p>使用 <code>express</code> 时记住一定不要在 controller 的异步回调中抛出异常，例如:</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+</pre></td><td class="code"><pre>app.get(<span class="string">'/'</span>, <span class="function"><span class="keyword">function</span> <span class="params">(req, res, next)</span> {</span> <span class="comment">// 总是接收 next 参数</span>
+    mysql.query(<span class="string">'SELECT * FROM users'</span>, <span class="function"><span class="keyword">function</span> <span class="params">(err, results)</span> {</span>
+        <span class="comment">// 不要这样做</span>
+        <span class="keyword">if</span> (err) <span class="keyword">throw</span> err;
+
+        <span class="comment">// 应该将 err 传递给 errorHandler 处理</span>
+        <span class="keyword">if</span> (err) <span class="keyword">return</span> next(err);
+    });
+});
+
+app.use(<span class="function"><span class="keyword">function</span> <span class="params">(err, req, res, next)</span> {</span> <span class="comment">// 带有四个参数的 middleware 专门用来处理异常</span>
+    res.render(<span class="number">500</span>, err.stack);
+});
+</pre></td></tr></table></figure>
+
+<h3 id="和_cluster_一起使用">和 cluster 一起使用</h3>
+<p>cluster 是 node 自带的负载均衡模块，使用 cluster 模块可以方便的建立起一套 master/slave 服务。在使用 cluster 模块时，需要注意不仅需要调用 <code>server.close()</code> 来关闭连接，同时还需要调用 <code>cluster.worker.disconnect()</code> 通知 master 进程已停止服务:</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+</pre></td><td class="code"><pre><span class="keyword">var</span> cluster = <span class="built_in">require</span>(<span class="string">'cluster'</span>);
+
+process.on(<span class="string">'uncaughtException'</span>, <span class="function"><span class="keyword">function</span> <span class="params">(err)</span> {</span>
+    console.log(err);
+
+    <span class="keyword">try</span> {
+        <span class="keyword">var</span> killTimer = setTimeout(<span class="function"><span class="keyword">function</span> <span class="params">()</span> {</span>
+            process.exit(<span class="number">1</span>);
+        }, <span class="number">30000</span>);
+        killTimer.unref();
+
+        server.close();
+
+        <span class="keyword">if</span> (cluster.worker) {
+            cluster.worker.disconnect();
+        }
+    } <span class="keyword">catch</span> (e) {
+        console.log(<span class="string">'error when exit'</span>, e.stack);
+    }
+});
+</pre></td></tr></table></figure>
+
+<h3 id="不要通过_uncaughtException_来忽略错误">不要通过 <code>uncaughtException</code> 来忽略错误</h3>
+<p>当 <code>uncaughtException</code> 事件有一个以上的 <code>listener</code> 时，会阻止 Node 结束进程。因此就有一个广泛流传的做法是监听 <code>process</code> 的 <code>uncaughtException</code> 事件来阻止进程退出，这种做法有内存泄露的风险，所以千万不要这么做:</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre>1
+2
+3
+</pre></td><td class="code"><pre>process.on(<span class="string">'uncaughtException'</span>, <span class="function"><span class="keyword">function</span> <span class="params">(err)</span> {</span> <span class="comment">// 不要这么做</span>
+    console.log(err);
+});
+</pre></td></tr></table></figure>
+
+<h3 id="pm2_对于_uncaughtException_的额外处理">pm2 对于 <code>uncaughtException</code> 的额外处理</h3>
+<p>如果你在用 pm2 0.7.1 之前的版本，那么要当心。pm2 有一个 bug，如果进程抛出了 <code>uncaughtException</code>，无论代码中是否捕获了这个事件，进程都会被 pm2 杀死。0.7.2 之后的 pm2 解决了这个问题。</p>
+<h3 id="要小心_worker-disconnect()">要小心 worker.disconnect()</h3>
+<p>如果你在退出进程时希望可以发消息给监控服务器，并且还使用了 cluster，那么这个时候要特别小心，比如下面的代码:</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+6
+7
+8
+9
+</pre></td><td class="code"><pre><span class="keyword">var</span> udpLog = dgram.createSocket(<span class="string">'udp4'</span>);
+<span class="keyword">var</span> cluster = <span class="built_in">require</span>(<span class="string">'cluster'</span>);
+
+process.on(<span class="string">'uncaughtException'</span>, <span class="function"><span class="keyword">function</span> <span class="params">(err)</span> {</span>
+    udpLog.send(<span class="string">'process '</span> + process.pid + <span class="string">' down'</span>, <span class="comment">/* ... 一些发送 udp 消息的参数 ...*/</span>);
+
+    server.close();
+    cluster.worker.disconnect();
+});
+</pre></td></tr></table></figure>
+
+<p>这份代码就不能正常的将消息发送出去。因为 <code>udpLog.send</code> 是一个异步方法，真正发消息的操作发生在下一个事件循环中。而在真正的发送消息之前 <code>cluster.worker.disconnect()</code> 就已经执行了。<code>worker.disconnect()</code> 会在当前进程没有任何链接之后，杀掉整个进程，这种情况有可能发生在发送 log 数据之前，导致 log 数据发不出去。</p>
+<p>一个解决方法是在 <code>udpLog.send</code> 方法发送完数据后再调用 <code>worker.disconnect</code>:</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+</pre></td><td class="code"><pre><span class="keyword">var</span> udpLog = dgram.createSocket(<span class="string">'udp4'</span>);
+<span class="keyword">var</span> cluster = <span class="built_in">require</span>(<span class="string">'cluster'</span>);
+
+process.on(<span class="string">'uncaughtException'</span>, <span class="function"><span class="keyword">function</span> <span class="params">(err)</span> {</span>
+    udpLog.send(<span class="string">'process '</span> + process.pid + <span class="string">' down'</span>, <span class="comment">/* ... 一些发送 udp 消息的参数 ...*/</span>, <span class="function"><span class="keyword">function</span> <span class="params">()</span> {</span>
+        cluster.worker.disconnect();
+    });
+
+    server.close();
+
+    <span class="comment">// 保证 worker.disconnect 不会拖太久..</span>
+    setTimeout(<span class="function"><span class="keyword">function</span> <span class="params">()</span> {</span>
+        cluster.worker.disconnect();
+    }, <span class="number">100</span>).unref();
+});
+</pre></td></tr></table></figure>
+
+<h2 id="小节">小节</h2>
+<p>说了这么多，结论是，目前为止(Node 0.10.25)，依然没有一个完美的方案来解决任意异常的优雅退出问题。用 <code>domain</code> 来捕获大部分异常，并且通过 <code>uncaughtException</code> 避免程序 crash 是目前来说最理想的方案。回调异常的退出问题在遇到 cluster 以后会更加复杂，特别是对于连接关闭的处理要格外小心。</p>
+<h2 id="参考文章">参考文章</h2>
+<ul>
+<li><a href="http://nodejs.org/api/domain.html#domain_warning_don_t_ignore_errors" target="_blank">Don’t ignore errors</a></li>
+<li><a href="http://nodejs.org/api/domain.html" target="_blank">Node API: domain</a></li>
+<li><a href="http://nodejs.org/api/process.html" target="_blank">Node API: process</a></li>
+<li><a href="http://cnodejs.org/topic/516b64596d38277306407936" target="_blank">Node.js 异步异常的处理与domain模块解析</a></li>
+<li><a href="http://www.alloyteam.com/2013/12/node-js-series-exception-caught/" target="_blank">Node.js异常捕获的一些实践</a></li>
+</ul>
+]]></content>
+    
+    
+      <category term="node" scheme="http://lostjs.com/tags/node/"/>
+    
+  </entry>
+  
+  <entry>
+    <title><![CDATA[用 node.js 做 Web 前端服务器的一些经验]]></title>
+    <link href="http://lostjs.com/2013/10/16/use-nodejs-as-web-frontend-server/"/>
+    <id>http://lostjs.com/2013/10/16/use-nodejs-as-web-frontend-server/</id>
+    <published>2013-10-16T12:13:00.000Z</published>
+    <updated>2014-04-23T14:03:26.000Z</updated>
+    <content type="html"><![CDATA[<p>前不久 NCZ 发表了新文章 <a href="http://www.nczonline.net/blog/2013/10/07/node-js-and-the-new-web-front-end/" target="_blank">Node.js and the new web front-end</a>（<a href="http://www.silverna.org/blog/?p=297" target="_blank">译文</a>），描述了用 node.js 做 Web 前端服务器的种种优势。NCZ 在文章中推荐了一套服务器模型(图片来源自<a href="http://www.nczonline.net/blog/2013/10/07/node-js-and-the-new-web-front-end/" target="_blank">Node.js and the new web front-end</a>)。</p>
+<img src="http://www.nczonline.net/blog/wp-content/uploads/2013/10/nodejs2.png">
+
+
+<p>这个模型在传统的后台服务器前，增加了一层 node.js 实现的 Frontend Server 层。这种架构的最大好处是前后端开发人员的依赖分离，让后端开发人员不必再关心数据在页面间如何传递、用户数据获取是通过 Ajax 还是刷新页面等前端开发所涉及的方方面面，前端开发人员也不必再关心数据如何在数据库中存储等等后端问题。</p>
+<blockquote>
+<p>The front-end and back-end now have a perfect split of concerns amongst the engineers who are working on those parts. The front-end has expanded back onto the server where the Node.js UI layer now exists, and the rest of the stack remains the realm of back-end engineers. — Nicholas C. Zakas</p>
+</blockquote>
+<p>碰巧前不久，我在公司内部尝试了这种架构，这里正好分享一些 node.js 做 Web 前端服务器的经验。</p>
+<h2 id="与后台服务器的交互">与后台服务器的交互</h2>
+<p>在用户的一次请求中，往往需要请求多个不同的后台接口。由于 node.js 的异步特性，写多次 HTTP 请求并处理回调是一件非常痛苦的事情，例如</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+</pre></td><td class="code"><pre><span class="keyword">var</span> request = <span class="built_in">require</span>(<span class="string">'request'</span>);
+
+exports.index = <span class="function"><span class="keyword">function</span> <span class="params">(req, res)</span> {</span>
+    request(<span class="string">'API_A'</span>, <span class="function"><span class="keyword">function</span> <span class="params">(err, response, body)</span> {</span>
+        <span class="keyword">if</span> (err) {
+            <span class="comment">// ...</span>
+        }
+        request(<span class="string">'API_B'</span>, <span class="function"><span class="keyword">function</span> <span class="params">(err, response, body)</span> {</span>
+            <span class="keyword">if</span> (err) {
+                <span class="comment">// ...</span>
+            }
+
+            request(<span class="string">'API_C'</span>, <span class="function"><span class="keyword">function</span> <span class="params">(err, response, body)</span> {</span>
+                <span class="keyword">if</span> (err) {
+                    <span class="comment">// ...</span>
+                }
+
+                <span class="comment">// ...</span>
+            });
+        });
+    });
+};
+</pre></td></tr></table></figure>
+
+<p>这种情况通过 [async] 库可以很很好的解决这个问题。[async] 是一个工具包，提供了各种各样的小函数来简化 node.js 的异步回调处理。</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+</pre></td><td class="code"><pre>var request = <span class="keyword">require</span>(<span class="string">'request'</span>);
+var async = <span class="keyword">require</span>(<span class="string">'async'</span>);
+
+exports.index = <span class="keyword">function</span> (req, res) {
+    async.map([<span class="string">'API_A'</span>, <span class="string">'API_B'</span>, <span class="string">'API_C'</span>, /* <span class="keyword">...</span> */], request, <span class="keyword">function</span> (err, results) {
+        <span class="keyword">if</span> (err) {
+            // <span class="keyword">...</span>
+        }
+
+        var resultA = results[<span class="number">0</span>];
+        var resultB = results[<span class="number">1</span>];
+        var resultC = results[<span class="number">2</span>];
+        // <span class="keyword">...</span>
+    });
+};
+</pre></td></tr></table></figure>
+
+<p>通过 <code>async.map</code> 可以很轻易的实现并行请求数据。如果需要串行请求数据，可以使用 <code>async.Series</code> 函数。除此之外，还可以使用 <code>async.mapLimit</code> 来限制 node.js 的并发连接数。</p>
+<h3 id="常用_API_数据的获取">常用 API 数据的获取</h3>
+<p>有些 API 数据是几乎每个页面都会用到的，例如当前用户的个人信息等。对于这类数据，可以通过 <code>middleware</code> 的方式来将它传递给 controller。</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+</pre></td><td class="code"><pre><span class="keyword">var</span> request = <span class="built_in">require</span>(<span class="string">'request'</span>);
+<span class="keyword">var</span> async = <span class="built_in">require</span>(<span class="string">'async'</span>);
+
+<span class="function"><span class="keyword">function</span> <span class="title">userdata</span> <span class="params">(req, res, next)</span> {</span>
+    request(<span class="string">'GET_USER_API'</span>, <span class="function"><span class="keyword">function</span> <span class="params">(err, response, body)</span> {</span>
+        <span class="keyword">if</span> (err) {
+            next(err);
+            <span class="keyword">return</span>;
+        }
+
+        req.user = <span class="built_in">JSON</span>.parse(body);
+        next();
+    });
+}
+
+app.get(<span class="string">'/pageA'</span>, userdata, pageAController);
+app.get(<span class="string">'/pageB'</span>, userdata, pageBController);
+app.get(<span class="string">'/pageC'</span>, userdata, pageCController);
+</pre></td></tr></table></figure>
+
+<h3 id="Cookie_代理">Cookie 代理</h3>
+<p>如果 API 接口需要验证 Cookie，那么 node.js 在发送 API 请求时，需要将用户的 Cookie 信息发到后台服务器。同样的，如果后台 API 接口修改了用户 Cookie，例如登陆 API，那么还需要 node.js 将设置用户 Cookie 的请求转发给用户。这就需要实现一个 <code>cookieRequest</code> 方法。</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+</pre></td><td class="code"><pre><span class="keyword">var</span> request = <span class="built_in">require</span>(<span class="string">'request'</span>);
+<span class="keyword">var</span> cookieRequest = <span class="function"><span class="keyword">function</span> <span class="params">(userRequest, userResponse, url, callback)</span> {</span>
+    <span class="keyword">var</span> options = {
+        url: url,
+        headers: {}
+    };
+    options.headers.Cookie = userRequest.header(<span class="string">'Cookie'</span>); <span class="comment">// 将用户的 Cookie 传递给后台服务器</span>
+    
+    request(options, <span class="function"><span class="keyword">function</span> <span class="params">(error, response, body)</span> {</span>
+        userResponse.setHeader(<span class="string">'Cookie'</span>, response.headers.cookie);
+        callback.apply(<span class="literal">null</span>, <span class="built_in">arguments</span>);
+    });
+};
+</pre></td></tr></table></figure>
+
+<h2 id="多核优化">多核优化</h2>
+<p>由于 node.js 的单进程特性，只启动一个 node.js 实例的话不能充分发挥多核 CPU 的性能。因此 node.js 提供了 <code>cluster</code> 模块来解决这个问题。<code>cluster</code> 可以管理多个服务器进程，充分发挥多核 CPU 的性能。</p>
+<p>用法很简单，只需要创建一个新的启动脚本，调用 <code>cluster</code> 模块来启动服务即可，node.js 官方的 API 文档给了一个很简单的例子：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+</pre></td><td class="code"><pre><span class="keyword">var</span> cluster = <span class="built_in">require</span>(<span class="string">'cluster'</span>);
+<span class="keyword">var</span> http = <span class="built_in">require</span>(<span class="string">'http'</span>);
+<span class="keyword">var</span> numCPUs = <span class="built_in">require</span>(<span class="string">'os'</span>).cpus().length;
+
+<span class="keyword">if</span> (cluster.isMaster) {
+  <span class="comment">// Fork workers.</span>
+  <span class="keyword">for</span> (<span class="keyword">var</span> i = <span class="number">0</span>; i &lt; numCPUs; i++) {
+    cluster.fork();
+  }
+
+  cluster.on(<span class="string">'exit'</span>, <span class="function"><span class="keyword">function</span><span class="params">(worker, code, signal)</span> {</span>
+    console.log(<span class="string">'worker '</span> + worker.process.pid + <span class="string">' died'</span>);
+  });
+} <span class="keyword">else</span> {
+  <span class="comment">// Workers can share any TCP connection</span>
+  <span class="comment">// In this case its a HTTP server</span>
+  http.createServer(<span class="function"><span class="keyword">function</span><span class="params">(req, res)</span> {</span>
+    res.writeHead(<span class="number">200</span>);
+    res.end(<span class="string">"hello world\n"</span>);
+  }).listen(<span class="number">8000</span>);
+}
+</pre></td></tr></table></figure>
+
+<h2 id="性能">性能</h2>
+<p>老的 Web 服务器使用的是 tomcat + java 的架构，用 node.js 重写整个前端层之后，整个服务的性能提升了不少。目前这个项目只是个人娱乐，所以也没有做太专业的性能测试，只是用 <code>ab</code> 随便打了打压力，在我的 iMac(2.7G i5, 12G) 上大约有 20% 的性能提升。这和 node.js HTTP 模块的高性能以及并发请求 API 不无关系。</p>
+<h2 id="结语">结语</h2>
+<p>随着项目规模的扩展，Web 前端服务器与后端服务器分离是一个不可避免的趋势。而 node.js 提供了一套对前端开发人员更加友好的 Web 前端服务器方案，这一方案将前后端开发人员从彼此不擅长的领域中解救出来，降低了沟通成本，对于提升开发效率有着非常大的帮助。</p>
+]]></content>
+    
+    
+      <category term="node" scheme="http://lostjs.com/tags/node/"/>
+    
+  </entry>
+  
+  <entry>
+    <title><![CDATA[setInterval 倒计时陷阱]]></title>
+    <link href="http://lostjs.com/2013/07/20/accurate-countdown-in-javascript/"/>
+    <id>http://lostjs.com/2013/07/20/accurate-countdown-in-javascript/</id>
+    <published>2013-07-20T07:03:00.000Z</published>
+    <updated>2014-04-23T14:03:19.000Z</updated>
+    <content type="html"><![CDATA[<p>最近发现页面上的一个倒计时功能出现了比较大的误差，debug 之后发现误差是由于 <code>setInterval</code> 不能实现准确执行任务导致的，例如下面这个例子：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+</pre></td><td class="code"><pre>    <span class="keyword">var</span> now = +<span class="keyword">new</span> <span class="built_in">Date</span>();
+    setInterval(<span class="function"><span class="keyword">function</span> <span class="params">()</span> {</span>
+        now += <span class="number">100</span>;
+        console.log(<span class="string">'diff'</span>, now - (+<span class="built_in">Date</span>.now()));
+    }, <span class="number">100</span>);
+</pre></td></tr></table></figure>
+
+<blockquote><br>    <div id="demo1"><br>        <button id="demo1Run">运行</button> <button id="demo1Stop">停止</button><br>        <table><br>            <tr><br>                <td>执行次数：</td><br>                <td id="demo1Count">0</td><br>            </tr><br>            <tr><br>                <td>累计误差(ms)：</td><br>                <td id="demo1Diff">0</td><br>            </tr><br>            <tr><br>                <td>平均误差(ms)：</td><br>                <td id="demo1Avg">0</td><br>            </tr><br>        </table><br>    </div><br></blockquote>
+
+<script type="text/javascript">
+(function () {
+    var timer = null;
+    var countEl = document.getElementById('demo1Count');
+    var diffEl = document.getElementById('demo1Diff');
+    var avgEl = document.getElementById('demo1Avg');
+
+    document.getElementById('demo1Run').onclick = function () {
+        var count = 0;
+        var now = +new Date();
+        clearInterval(timer);
+        timer = setInterval(function () {
+            now += 100;
+            count += 1;
+            countEl.innerHTML = count;
+            diffEl.innerHTML = now - (+Date.now());
+            avgEl.innerHTML = (now - (+Date.now())) / count;
+        }, 100);
+    };
+
+    document.getElementById('demo1Stop').onclick = function () {
+        clearInterval(timer);
+    };
+}());
+</script>
+
+<p>在我的 chrome 浏览器上平均每次执行时会有 1ms 的延迟。由于这个延迟是累加的，当代码执行 1000 次时误差就积累到了 1 秒。</p>
+<p>想到的解决方法就是在执行过程中不停的修正下一次运行函数的时间，由于<code>setInterval</code> 的间隔时间是在创建 <code>timer</code> 时指定的，所以就只能用 <code>setTimeout</code> 来实现定时器。</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+6
+7
+8
+</pre></td><td class="code"><pre>    <span class="keyword">var</span> now = +<span class="keyword">new</span> <span class="built_in">Date</span>();
+    setTimeout(<span class="function"><span class="keyword">function</span> <span class="title">run</span><span class="params">()</span> {</span>
+        now += <span class="number">100</span>;
+        <span class="keyword">var</span> fix = now - (+<span class="built_in">Date</span>.now());
+        console.log(<span class="string">'diff:'</span>, fix)
+
+        setTimeout(run, <span class="number">100</span> + fix);
+    }, <span class="number">100</span>);
+</pre></td></tr></table></figure>
+
+<blockquote><br>    <div id="demo2"><br>        <button id="demo2Run">运行</button> <button id="demo2Stop">停止</button><br>        <table><br>            <tr><br>                <td>执行次数：</td><br>                <td id="demo2Count">0</td><br>            </tr><br>            <tr><br>                <td>误差(ms)：</td><br>                <td id="demo2Diff">0</td><br>            </tr><br>            <tr><br>                <td>平均每次执行误差(ms)：</td><br>                <td id="demo2Avg">0</td><br>            </tr><br>        </table><br>    </div><br></blockquote>
+
+<script type="text/javascript">
+(function () {
+    var timer = null;
+    var countEl = document.getElementById('demo2Count');
+    var diffEl = document.getElementById('demo2Diff');
+    var avgEl = document.getElementById('demo2Avg');
+
+    document.getElementById('demo2Run').onclick = function () {
+        var count = 0;
+        var now = +new Date();
+        clearInterval(timer);
+
+        timer = setTimeout(function run() {
+            now += 1000;
+
+            var diff = now - (+Date.now());
+
+            count += 1;
+            countEl.innerHTML = count;
+            diffEl.innerHTML = diff;
+            avgEl.innerHTML = diff / count;
+
+            timer = setTimeout(run, 1000 + diff);
+        }, 1000);
+    };
+
+    document.getElementById('demo2Stop').onclick = function () {
+        clearInterval(timer);
+    };
+}());
+</script>
+
+<p>用 <code>setTimeout</code> 就解决了 <code>setInterval</code> 误差累计的问题。</p>
+<p>简单封装一下：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+</pre></td><td class="code"><pre>    <span class="function"><span class="keyword">function</span> <span class="title">accurateInterval</span><span class="params">(callback, interval)</span> {</span>
+        <span class="keyword">var</span> now = +<span class="keyword">new</span> <span class="built_in">Date</span>();
+
+        setTimeout(<span class="function"><span class="keyword">function</span> <span class="title">run</span><span class="params">()</span> {</span>
+            now += interval;
+            <span class="keyword">var</span> fix = now - (+<span class="built_in">Date</span>.now());
+
+            setTimeout(run, interval + fix);
+
+            callback();
+        }, interval);
+    }
+</pre></td></tr></table></figure>
+
+<p>末尾，抛几块砖</p>
+<ul>
+<li>在 <code>accurateinterval</code> 函数中，是否可以先执行 <code>callback</code> 函数，再 <code>setTimeout</code>？</li>
+<li>当 <code>callback</code> 函数的执行时间超过定时间隔后会出现什么事情？</li>
+<li><code>accurateinterval</code> 实现的倒计时，会出现走时不均匀的问题。也就是说倒计时的数字会时快时慢，如何解决这个问题？</li>
+</ul>
+]]></content>
+    
+    
+      <category term="javascript" scheme="http://lostjs.com/tags/javascript/"/>
+    
+  </entry>
+  
+  <entry>
+    <title><![CDATA[Grunt -- 最好的前端构建框架]]></title>
+    <link href="http://lostjs.com/2012/12/08/grunt-the-best/"/>
+    <id>http://lostjs.com/2012/12/08/grunt-the-best/</id>
+    <published>2012-12-08T03:21:00.000Z</published>
+    <updated>2014-04-23T14:03:13.000Z</updated>
+    <content type="html"><![CDATA[<p>每个前端开发工程师都会遇到前端文件打包、压缩的问题。</p>
+<h2 id="Shell_-&gt;_Ant_-&gt;_Jake">Shell -&gt; Ant -&gt; Jake</h2>
+<p>最开始，我是用 shell 脚本调用 yuicompressor、cssmin 来压缩文件，非常简单，就像这样：</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+6
+7
+</pre></td><td class="code"><pre><span class="preprocessor">#!/usr/bin/env bash</span>
+
+cat src/a<span class="preprocessor">.js</span> src/b<span class="preprocessor">.js</span> src/c<span class="preprocessor">.js</span> &gt; dst/main<span class="preprocessor">.js</span>
+yuicompressor main<span class="preprocessor">.js</span>
+
+cat src/a<span class="preprocessor">.css</span> src/b<span class="preprocessor">.css</span> src/c<span class="preprocessor">.css</span> &gt; dst/main<span class="preprocessor">.css</span>
+cssmin main<span class="preprocessor">.css</span>
+</pre></td></tr></table></figure>
+
+<p>后来随着项目规模的逐渐增大，shell 脚本逐渐暴露出了很多问题，比如：</p>
+<ul>
+<li>不能自动下载依赖的外部命令，比如 yuicompressor/cssmin</li>
+<li>缺乏变量替换功能</li>
+<li>难以跨平台</li>
+<li>代码难以维护</li>
+</ul>
+<p>因此 shell 脚本在到了近百行以后就被放弃了，取而代之的是 Ant。Ant 内置了一些常见任务，比如文件复制、合并、变量替换等，并且可以方便的通过编写自定义任务来扩展。得益于 Java 灵活的扩展性，Ant 任务可以非常方便的在各个项目之间分享，很好的解决了 shell 脚本代码难以维护和迁移的缺点。Ant 还可以结合 ivy 自动解决依赖，实现了完全的跨平台支持。</p>
+<ul>
+<li>推荐文章：<a href="http://www.36ria.com/4411" target="_blank">ant入门指南—web前端开发七武器（1）</a></li>
+</ul>
+<p>但是，Ant 有个缺点：它是 Java 写的。Ant 如果要执行 js 代码，就必须通过 rhino，速度比 nodejs 慢了不少，作为一个 JavaScript 工程师，我非常希望可以直接用 js 来写构建脚本。</p>
+<p>最终让我放弃 Ant 的是一个新的项目。这个项目的特殊之处在于它用了 maven 作为 Java 的构建工具。之前用的各种 Ant 任务也就没有了用武之地。尽管我可以将 Ant 的任务迁移到 mavn 下面，但是我更希望能找到一个和后台语言完全无关的构建系统。</p>
+<p>因此在今年年初，我找到了一个 nodejs 环境下的构建框架 <a href="https://github.com/mde/jake" target="_blank">Jake</a>。Jake 的各种编译任务由 <code>Jakefile</code> 中定义（这一点很像 Make），<code>Jakefile</code> 实际上就是一个 js 文件，通过 nodejs 来执行压缩合并等常见任务。</p>
+<p>得益于 nodejs，Jake 执行 js 代码压缩的速度非常快，而且开发调试也更加方便。但是有个和 shell 脚本类似的问题：不同项目间的 Jake 任务难以重用，项目大了以后 <code>Jakefile</code> 依然很难维护，面对一个上千行的 <code>Jakefile</code>，和面对一个几百行的 shell 脚本的感觉差不了太多。</p>
+<p>以上就是我从 Shell 到 Ant 再到 Jake 的折腾经历。经历这么一圈之后，我发现一个好用的构建框架应该具有以下三个特点：</p>
+<ul>
+<li>跨平台（Ant, Jake）</li>
+<li>易维护、易迁移（Ant）</li>
+<li>开发简单（Shell，Jake）</li>
+</ul>
+<p><a href="http://gruntjs.com" target="_blank">grunt</a> 就是同时具有以上三个特点的前端构建框架。</p>
+<h2 id="grunt">grunt</h2>
+<p><a href="http://gruntjs.com" target="_blank">grunt</a> 是一个开源的基于任务 (Task) 的前端构建框架。它除了有 Jake 的优点（跨平台、开发简单）以外，还有一套设计良好的 task 框架用来组织各种构建任务。grunt 内置了几个非常常见的构建任务：</p>
+<ul>
+<li>concat - 组合各种文件</li>
+<li>lint - 用 JSHint 检查代码</li>
+<li>min - 用 UglifyJS 压缩代码</li>
+<li>qunit - 跑 QUnit 单元测试</li>
+<li>watch - 当源代码文件发生变化时自动执行任务</li>
+</ul>
+<p>除此之外还可以通过 npm 来方便的获取几百个现成的 task，比如用 closure 而不是 UglifyJS 来压缩 js，或者用 less 来生成 css，又或者用 jslint 而不是 jshint 来检查语法等，这些任务都可以在 npm 上找到。如果这些任务无法满足你的需求，grunt 还允许你方便的添加自定任务，就像写 nodejs 代码一样简单。自定任务还可以发布到 npm 上，通过 npm 在多个项目中共享这些任务。[fenbi-grunt-tasks] 就是粉笔网自定的 js 模块合并、handlebars 模板预编译任务 ([grunt-tbf2e] 貌似是淘宝的自定任务)。</p>
+<p>任务之间的组合也是 grunt 非常好用的一个特性，例如通过 watch 任务和 rsync 任务的结合，可以方便的实现当源码发生改变时，自动同步代码到服务器上。</p>
+<p>每次 grunt 执行时，grunt 都会去读取当前目录下的 <code>grunt.js</code> (就像 make 命令去寻找 Makefile 那样)，然后去读取其中的任务配置，例如源码目录等。grunt 最大的特点在于，配置文件中不包含任何的任务逻辑代码(OO 的开闭原则)。这一特性使得任务可以专心于“要做什么”而不是“要对什么做事情”，不再被特定的项目所绑架。</p>
+<ul>
+<li>推荐阅读：<a href="http://www.oschina.net/question/89964_47198" target="_blank">grunt简要介绍—基于任务的JavaScript项目命令行构建工具</a></li>
+</ul>
+<p>grunt 给我最大的感受是：原来天下有这么多码农都在为前端构建而奋斗！grunt 使得各个项目的构建脚本不再彼此孤立，使得打造整个公司的前端构建工具变的更加简单。</p>
+]]></content>
+    
+    
+      <category term="grunt" scheme="http://lostjs.com/tags/grunt/"/>
+    
+  </entry>
+  
+  <entry>
+    <title><![CDATA[使用 zsh 的九个理由]]></title>
+    <link href="http://lostjs.com/2012/09/27/zsh/"/>
+    <id>http://lostjs.com/2012/09/27/zsh/</id>
+    <published>2012-09-27T04:39:00.000Z</published>
+    <updated>2014-04-23T14:03:15.000Z</updated>
+    <content type="html"><![CDATA[<p>像大部分 *nix 用户，我之前用 bash 很多年，期间也有过小的不爽，但一直都忍过来，或者是说没想过这些不爽的地方能解决，比如 <code>cd</code> 到一个深目录时得哐哐猛敲 <code>&lt;TAB&gt;</code>。这么多年里我也尝试过其他 shell。比如 ksh/tcsh 以及今天要说的 zsh，但最终都没坚持下去，因为心中始终还是认为 bash 是最正统的 shell，不愿意去主动深入学习其他 shell。直到前几天逛 github，发现 <a href="https://github.com/popular/forked" target="_blank">排名第 6 的开源项目 oh-my-zsh</a>，下来试用了一把，顿时觉得 bash 各种操作不爽到无法忍受。</p>
+<h2 id="放弃_bash_的各种内牛满面的理由">放弃 bash 的各种内牛满面的理由</h2>
+<p>这里有个 youtube 上的视频，短短 4 分钟就已经抛出了几十个让 bash 用户切换到 zsh 中的理由。<a href="http://youtu.be/HGBgMX5HW_g" target="_blank">视频链接</a></p>
+<h3 id="理由_0：zsh_兼容_bash">理由 0：zsh 兼容 bash</h3>
+<p>兼容 bash 意味着我不需要太多学习成本就可以切换过来，意味着我以前在 bash 下积累的 shell 语法、基本操作都不会荒废。在我心里 bash 还是最通用和标准的 shell 环境，因此兼容 bash 让我切换到 zsh 时没有太多后顾之忧。</p>
+<h3 id="理由_1：zsh_的补全模式更方便">理由 1：zsh 的补全模式更方便</h3>
+<p>zsh 中按两下 tab 键可以触发 zsh 的补全，所有待补全项都可以通过键盘方向键或者 <code>&lt;Ctrl-n/p/f/b&gt;</code> 来选择。</p>
+<img src="http://www.geekpics.net/images/2012/09/27/j4Ho9.png" title="zsh 的交互式补全模式">
+
+
+<h3 id="理由_2：zsh_支持命令选项补全">理由 2：zsh 支持命令选项补全</h3>
+<p>zsh 除了支持目录的补全，还支持命令选项的补全，例如 <code>ls -&lt;TAB&gt;&lt;TAB&gt;</code> 会直接列出所有 <code>ls</code> 的参数，再也不会出现一个命令打到一半，忘记参数导致重开一个 terminal <code>man</code> 一把。</p>
+<img src="http://www.geekpics.net/images/2012/09/27/ZB7EC.png" title="zsh 补全 ls 命令的选项">
+
+
+<h3 id="理由_3：zsh_支持命令参数补全">理由 3：zsh 支持命令参数补全</h3>
+<p>以前想 <code>kill</code> 掉一个进程，我的做法是 <code>ps aux | grep &quot;进程名&quot;</code> 然后记下 id，再 <code>kill id</code>。在 <code>zsh</code> 下，只需要 <code>kill 进程名&lt;TAB&gt;</code>，<code>zsh</code> 就会自动补全进程的 pid。</p>
+<img src="http://www.geekpics.net/images/2012/09/27/Xefxc.png" title="zsh 补全 kill 命令的参数">
+
+
+<p>其余我常用的补全还有：</p>
+<ul>
+<li><code>ssh &lt;TAB&gt;&lt;TAB&gt;</code> 时 zsh 会自动列出你访问过的主机和用户名来补全 <code>ssh</code> 的参数。</li>
+<li><code>brew install &lt;TAB&gt;&lt;TAB&gt;</code> 来补全软件包名，除了 homebrew 以外，同样支持 port/apt-get 等其他包管理器。</li>
+</ul>
+<h3 id="理由_4：zsh_支持更加聪明的目录补全">理由 4：zsh 支持更加聪明的目录补全</h3>
+<p>以前比如想进入一个比较深的目录，比如 <code>/Users/pw/workspace/project/src/main/webapps/static/js</code>，就得在 bash 下面打半天，不停的 tab 去补全一个正确的路径出来。在 zsh 下，只需要输入每个路径的头字母然后 tab 一下： <code>cd /u/p/w/p/s/m/w/s/j&lt;TAB&gt;</code></p>
+<h3 id="理由_5：zsh_强大的快速目录切换">理由 5：zsh 强大的快速目录切换</h3>
+<p>以前最苦逼的事情莫过于频繁在两个工作目录下切换，总要打一长串 <code>cd</code> 路径。也尝试过 <code>popd</code> 和 <code>pushd</code> 来解决这个问题，但往往是目录已经切换了才想起来没用 <code>pushd</code>。而 zsh 会记住你每一次切换的路径，然后通过 <code>1</code> 来切换到你上一次访问的路径，<code>2</code> 切换到上上次……一直到 <code>9</code>，还可以通过 <code>d</code> 查看目录访问历史。</p>
+<p>zsh 还可以配合 autojump 一起使用，autojump 会记录下每一个你访问过的目录，然后通过 <code>j</code> 来快速跳转。</p>
+<h3 id="理由_6：zsh_支持全局_alias_和后缀名_alias">理由 6：zsh 支持全局 alias 和后缀名 alias</h3>
+<p>bash 的 <code>alias</code> 只能做命令的缩写，而 <code>zsh</code> 更进一步，使 <code>alias</code> 可以缩写命令的一部分，例如参数或环境变量设置。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+</pre></td><td class="code"><pre>$ alias <span class="operator">-s</span> log=less
+$ ~/package/tomcat/log/catalina.log <span class="comment"># 相当于 less ~/package/tomcat/log/catalina.log</span>
+$ alias -g PR=http_proxy=<span class="number">127.0</span>.<span class="number">0.1</span>:<span class="number">8087</span>
+$ PR curl https://twitter.com <span class="comment"># 相当于 http_proxy=127.0.0.1:8087 curl https://twitter.com</span>
+</pre></td></tr></table></figure>
+
+<h3 id="理由_7：zsh_有着丰富多彩的命令行提示符">理由 7：zsh 有着丰富多彩的命令行提示符</h3>
+<p>bash 下通过设置 <code>$PS1</code> 已经可以实现很丰富的提示符了，而 zsh 更进一步，可以实现诸如多行提示符、提示符右对齐等功能。<code>oh-my-zsh</code> 配置文件中提供了非常丰富的提示符 theme 供选择，我使用的是 <code>gentoo</code> 主题，比较简洁，还可以显示当前 git 仓库的状态。</p>
+<h3 id="理由_8：zsh_有更多优雅的语法">理由 8：zsh 有更多优雅的语法</h3>
+<p>例如修改 <code>PATH</code>，bash 下设置 <code>$PATH</code> 要求所有路径都要写在一行里，目录多了以后看起来就很难看。zsh 支持更加符合程序员审美观的设置方式。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+</pre></td><td class="code"><pre>path=(
+    ~/bin
+    <span class="variable">$path</span>
+    ~/package/smartsprites/bin
+)
+</pre></td></tr></table></figure>
+
+<h2 id="安装_zsh">安装 zsh</h2>
+<p>Linux 用户通过各自发行版的包管理器直接安装即可。</p>
+<p>Mac 自带一个 4.x.x 版本的 zsh，可以直接使用，也可以通过 homebrew 安装最近刚刚发布的 5.0.0 版本。推荐使用最新的 5.0 版本，对多字节字符提供了完整的支持，这一点对于国内用户来说很重要。<a href="http://zsh.sourceforge.net/releases.html" target="_blank">详细的 release note</a></p>
+<h3 id="设置为默认_shell">设置为默认 shell</h3>
+<p>通过命令 <code>chsh</code> 修改默认登录 shell，需要注意的是，如果通过 homebrew 安装了最新版本的 zsh，则需要 <code>sudo</code>  编辑 <code>/etc/shells</code> 加入一行 <code>/usr/local/bin/zsh</code>。然后再通过 <code>chsh</code> 来修改默认 shell，否则会提示 <code>/usr/local/bin/zsh</code> 不是合法的 shell。</p>
+<h2 id="安装_oh-my-zsh_配置">安装 oh-my-zsh 配置</h2>
+<p>对于每一个像我这样的 zsh 初级用户来说，oh-my-zsh 就是救人于水火中的大杀器，强烈建议使用此配置上手 zsh。</p>
+<p>作者提供了傻瓜安装命令：</p>
+<pre><code>curl -<span class="constant">L</span> <span class="symbol">https:</span>/<span class="regexp">/github.com/robbyrussell</span><span class="regexp">/oh-my-zsh/raw</span><span class="regexp">/master/tools</span><span class="regexp">/install.sh | sh</span>
+</code></pre><p>也可以手工安装，<a href="https://github.com/robbyrussell/oh-my-zsh#the-manual-way" target="_blank">具体步骤</a>。</p>
+<h2 id="几个必备的插件">几个必备的插件</h2>
+<h3 id="autojump">autojump</h3>
+<p>帮助快速目录跳转的小工具。首先要安装 autojump，然后在 <code>.zshrc</code> 中开启 autojump 插件。它会记录下来每个你进入过的目录，随后通过 <code>j 目录名称的一部分</code> 就可快速跳转到该目录。 <a href="http://youtu.be/tnNyoMGnbKg" target="_blank">Youtube 视频介绍</a></p>
+<h3 id="git">git</h3>
+<p>Git 命令补全，除了可以补全 git 的子命令、命令开关等常规补全项以外，还可以补全分支名等内容，用 git 必开的插件。</p>
+<h3 id="osx">osx</h3>
+<p>提供一些与 Mac OSX 系统交互的命令，比如：</p>
+<ul>
+<li>man-preview 通过 preview 程序查看一个命令的手册，例如 <code>man-preview git</code></li>
+<li>quick-look 快速预览文件</li>
+<li>pfd 返回当前 finder 打开的文件夹的路径</li>
+<li>cdf 切换到当前 finder 所在的目录</li>
+</ul>
+]]></content>
+    
+    
+      <category term="zsh" scheme="http://lostjs.com/tags/zsh/"/>
+    
+  </entry>
+  
+  <entry>
+    <title><![CDATA[Mustache.js/Hogan.js 模板预编译]]></title>
+    <link href="http://lostjs.com/2012/08/30/mustache-precompile-with-hogan/"/>
+    <id>http://lostjs.com/2012/08/30/mustache-precompile-with-hogan/</id>
+    <published>2012-08-30T08:18:00.000Z</published>
+    <updated>2014-04-23T14:03:21.000Z</updated>
+    <content type="html"><![CDATA[<p><a href="https://github.com/janl/mustache.js" target="_blank">mustache.js</a> 是<a href="http://fenbi.com" target="_blank">粉笔网</a>用的一个开源前端模板引擎，无逻辑的设计，简单好用，性能也不错。</p>
+<figure class="highlight javascript"><figcaption><span>一个简单的 mustache.js 渲染例子 demo.js</span></figcaption><table><tr><td class="gutter"><pre>1
+2
+3
+</pre></td><td class="code"><pre><span class="keyword">var</span> template = <span class="string">"hello {name}}!"</span>; <span class="comment">// 因为代码高亮插件的 bug，这里 name 左边少了一个 {，实际代码中要加上</span>
+console.log(Mustache.render(template, {name: <span class="string">"foo"</span>})); <span class="comment">// hello foo!</span>
+console.log(Mustache.render(template, {name: <span class="string">"bar"</span>})); <span class="comment">// hello bar!</span>
+</pre></td></tr></table></figure>
+
+<p>Mustache 在 render 一个模板时，首先会将这个模板编译成一个模板函数。比如上面例子里的 <code>hello {{name}}</code> 模板，会被编译成一个模板函数：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre>1
+2
+3
+</pre></td><td class="code"><pre><span class="function"><span class="keyword">function</span> <span class="title">anonymous</span><span class="params">(c, r)</span> {</span>
+    <span class="keyword">return</span> <span class="string">""</span> + <span class="string">"hello\u0020"</span> + r._name(<span class="string">"name"</span>, c, <span class="literal">true</span>) + <span class="string">"\u0021"</span>;
+}
+</pre></td></tr></table></figure>
+
+<p>大规模应用时，模板的编译过程会花掉整个 render 过程中 30% 左右的时间。</p>
+<h2 id="使用_Hogan-js_预编译_Mustache_模板">使用 Hogan.js 预编译 Mustache 模板</h2>
+<p>Mustache 模板的这个问题已经被不少人遇到，也有很多解决办法。比如 twitter 发布的 <a href="http://twitter.github.com/hogan.js" target="_blank">Hogan.js</a>。Hogan.js 是 Mustache 模板引擎的另一套实现，增加了预编译机制，使得模板字符串可以在打包阶段被预先处理成模板函数，这样浏览器就不必再重复去编译模板。</p>
+<p>Hogan.js 同时提供了可以运行与浏览器端和 node.js 环境下的代码，node.js 负责打包时预编译，浏览器端负责用预编译后的代码渲染页面。</p>
+<p>首先通过 npm 安装 hogan.js 的 node.js 环境：</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre>1
+</pre></td><td class="code"><pre><span class="variable">$ </span>npm install hogan.js
+</pre></td></tr></table></figure>
+
+<p>然后对源代码进行一些修改，在模板字符串的旁边加上一些标记，让打包脚本可以找到模板字符串：</p>
+<figure class="highlight javascript"><figcaption><span>修改后的例子 demo.js</span></figcaption><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+</pre></td><td class="code"><pre><span class="keyword">var</span> Template = {
+    _cache: {},
+
+    <span class="comment">// 所有的模板放在这个对象下</span>
+    _template: {
+        hello: <span class="comment">/*TMPL*/</span><span class="string">"hello {name}}!"</span><span class="comment">/*TMPL*/</span> <span class="comment">// 因为代码高亮插件的 bug，这里 name 左边少了一个 {，实际代码中要加上</span>
+    },
+
+    <span class="comment">// 这个适配函数会同时处理字符串模板和模板函数的情况</span>
+    render: <span class="function"><span class="keyword">function</span> <span class="params">(name, data)</span> {</span>
+        <span class="keyword">if</span> (!<span class="keyword">this</span>._cache[name]) {
+            <span class="comment">// 如果代码被预编译过，则不需要 compile</span>
+            <span class="keyword">if</span> (<span class="keyword">typeof</span> <span class="keyword">this</span>._template[name] === <span class="string">'function'</span>) {
+                <span class="keyword">this</span>._cache[name] = <span class="keyword">new</span> Hogan.Template(<span class="keyword">this</span>._template[name]);
+            } <span class="keyword">else</span> <span class="keyword">if</span> (<span class="keyword">typeof</span> <span class="keyword">this</span>._template[name] === <span class="string">'string'</span>) {
+                <span class="keyword">this</span>._cache[name] = Hogan.compile(<span class="keyword">this</span>._template[name]);
+            }
+        }
+
+        <span class="keyword">return</span> <span class="keyword">this</span>._cache[name].render(data);
+    }
+};
+
+console.log(Template.render(<span class="string">'hello'</span>, {name: <span class="string">"foo"</span>})); <span class="comment">// hello foo!</span>
+console.log(Template.render(<span class="string">'hello'</span>, {name: <span class="string">"bar"</span>})); <span class="comment">// hello bar!</span>
+</pre></td></tr></table></figure>
+
+
+<figure class="highlight javascript"><figcaption><span>nodejs 环境中的预编译过程</span></figcaption><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+6
+7
+8
+9
+</pre></td><td class="code"><pre><span class="keyword">var</span> hogan = <span class="built_in">require</span>(<span class="string">"hogan.js"</span>);
+<span class="keyword">var</span> fs = <span class="built_in">require</span>(<span class="string">"fs"</span>);
+<span class="keyword">var</span> fileContent = fs.readFileSync(<span class="string">"demo.js"</span>, <span class="string">"utf-8"</span>);
+fileContent.replace(<span class="regexp">/\/\*TMPL\*\/"(.*?)"\/\*TMPL\*\//g</span>, <span class="function"><span class="keyword">function</span> <span class="params">($0, $1)</span> {</span>
+    <span class="keyword">return</span> hogan.compile($<span class="number">1</span>, {
+        asString: <span class="literal">true</span>
+    });
+});
+fs.writeFileSync(<span class="string">"demo.js"</span>, fileContent, <span class="string">"utf-8"</span>);
+</pre></td></tr></table></figure>
+
+<p>源代码编译完之后，模板字符串就变成了模板函数：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+6
+</pre></td><td class="code"><pre><span class="comment">/* ... */</span>
+    hello: <span class="function"><span class="keyword">function</span><span class="params">(c,p,i)</span>{</span><span class="keyword">var</span> _=<span class="keyword">this</span>;_.b(i=i||<span class="string">""</span>);_.b(<span class="string">"hello "</span>);_.b(_.v(_.f(<span class="string">"name"</span>,c,p,<span class="number">0</span>)));_.b(<span class="string">"!"</span>);<span class="keyword">return</span> _.fl();;}
+<span class="comment">/* ... */</span>
+
+console.log(Template.render(<span class="string">'hello'</span>, {name: <span class="string">"foo"</span>})); <span class="comment">// hello foo!</span>
+console.log(Template.render(<span class="string">'hello'</span>, {name: <span class="string">"bar"</span>})); <span class="comment">// hello bar!</span>
+</pre></td></tr></table></figure>
+
+<h2 id="参考资料">参考资料</h2>
+<ul>
+<li><a href="http://www.grobmeier.de/precompiling-hogan-jsmustache-templates-on-a-java-server-with-struts-2-16012012.html#.UD82lmhiivI" target="_blank">Precompiling hogan.js/mustache templates on a Java server with Struts 2</a></li>
+</ul>
+]]></content>
+    
+    
+      <category term="mustache" scheme="http://lostjs.com/tags/mustache/"/>
+    
+  </entry>
+  
+  <entry>
+    <title><![CDATA[粉笔网招聘开发工程师]]></title>
+    <link href="http://lostjs.com/2012/08/30/fenbi-recruit/"/>
+    <id>http://lostjs.com/2012/08/30/fenbi-recruit/</id>
+    <published>2012-08-30T07:48:00.000Z</published>
+    <updated>2014-04-23T14:03:11.000Z</updated>
+    <content type="html"><![CDATA[<p><a href="http://fenbi.com" target="_blank">粉笔网</a>是个学习社区，网易前高管离职创业。8 月 27 日正式上线。目前的产品形态是微博形式的，推出以后老师和同学普遍反映上手容易，也希望能加入更多方便学习交流的功能。 </p>
+<p>目前我们的技术开发团队 7 个人，涵盖数据库、Web 开发、Android、iOS 等多个方面，团队整体实力平均，同时希望各个方面都能再有 1-2 个新同学参与。 </p>
+<p>我在团队中主要负责前端这块，目前我们的前端 JS 框架是 SeaJS + Backbone 这样的组合，CSS 框架则是 Less。同时还应用了 jQuery/underscore/hogan 这些目前比较流行的库做开发。不需要太多考虑 IE6 下的兼容性，如果你喜欢前端这块的新技术，那这里的工作对于你来说会有一种“玩着就把钱挣了”的感觉。 </p>
+<p>待遇方面，前端研发工程师的待遇和其他研发工程师待遇相同，都是 18w-30w，正规五险一金、转正配一笔性感诱人的期权、餐补报销、免费可乐水果管饱、iMac 双显、帅哥靓妹协助解决单身问题什么都是妥妥的。 </p>
+<p>公司目前在东三环朝外 SOHO，如果你在五道口这则有同事的顺风车可搭。 </p>
+<h5 id="我希望未来一起并肩战斗的同学应该是：">我希望未来一起并肩战斗的同学应该是：</h5>
+<ul>
+<li>有信心扛起一整个网站，而不只是负责一小部分 feature 的开发 </li>
+<li>解决问题时不仅仅是霰弹枪一把而是愿意研究问题背后的原因 </li>
+<li>Google 资料/上栈爆网/混 Github 毫无压力 </li>
+<li>有无限的求知欲望和探索欲望，对于不整洁的代码有天然的愤怒感 </li>
+</ul>
+<h5 id="这样的同学，欢迎你来我们这里：">这样的同学，欢迎你来我们这里：</h5>
+<ul>
+<li>全职或每周 4 天以上的实习 </li>
+<li>负责一个超大型网站的 Web 开发 </li>
+<li>培养起一个小型技术团队 </li>
+<li>Being geek </li>
+</ul>
+<p>如果你是这样，或者你希望将来称为这样的工程师，欢迎通过以下方式联系我： </p>
+<ul>
+<li>微博 <a href="http://weibo.com/perfectworks/" target="_blank">@perfectworks</a></li>
+<li>邮箱 perfectworks#gmail.com </li>
+</ul>
+]]></content>
+    
+    
+      <category term="招聘" scheme="http://lostjs.com/tags/%E6%8B%9B%E8%81%98/"/>
+    
+  </entry>
+  
+  <entry>
+    <title><![CDATA[教程：使用 pathogen + git 管理 Vim 插件]]></title>
+    <link href="http://lostjs.com/2012/02/04/use-pathogen-and-git-to-manage-vimfiles/"/>
+    <id>http://lostjs.com/2012/02/04/use-pathogen-and-git-to-manage-vimfiles/</id>
+    <published>2012-02-03T18:40:00.000Z</published>
+    <updated>2014-04-23T14:03:09.000Z</updated>
+    <content type="html"><![CDATA[<p>Vim 用了很多年，一开始我是把所有插件直接扔到 .vim 目录下。时间长了以后，.vim 下面有好多零碎的文件，分不清哪个属于哪个插件，删除和升级插件都很困难。相信很多 Vimer 也遇到了这个问题。</p>
+<p>Pathogen 是一款拯救各个 Vimer 于水火之中的 Vim 插件，它一改原先 Vim 只能把插件全部扔到 .vim 目录下的操作方式，使得各个插件可以以一个独立的文件夹存在于 .vim/bundle 目录中，添加和删除插件都变的非常清爽。再加上 git 强大的子模块管理功能，可以实现方便的插件安装和自动升级。</p>
+<h2 id="Pathogen_做了什么">Pathogen 做了什么</h2>
+<p>在 Pathogen 之前，安装插件就是把文件都丢到 .vim 目录下，文件都混在一起，非常不好管理：</p>
+<pre><code><span class="preprocessor">.vim</span>
+  ├── doc
+  ├── plugin
+  │   ├── vim-scratch<span class="preprocessor">.vim</span>
+  │   └── vim-surround<span class="preprocessor">.vim</span>
+  ├── ftplugin
+  └── autoload
+</code></pre><p>Pathogen 可以理解成一个插件的加载器，通过 Pathogen，可以将不同的插件放到不同的目录里，比如：</p>
+<pre><code><span class="built_in">.</span>vim
+  └──bundle
+      ├── vim<span class="attribute">-scratch</span>
+      │   └── plugin
+      │       └── vim<span class="attribute">-scratch</span><span class="built_in">.</span>vim
+      └── vim<span class="attribute">-surround</span>
+          ├── doc
+          └── plugin
+              └──vim<span class="attribute">-surround</span><span class="built_in">.</span>vim
+</code></pre><p>这样，各个插件之间的文件都独立于自己的目录，删除一个插件，只要直接删除这个插件的目录就行了。</p>
+<p>Pathogen 的使用非常简单，在此不在赘述，参见文章 <a href="http://blog.syndim.org/2011/08/13/vim-pathogen/" target="_blank">更好的管理VIM插件（续） pathogen</a></p>
+<h2 id="Pathogen_做不了什么">Pathogen 做不了什么</h2>
+<p>Pathogen 相当于一个插件的加载器，只提供最简单的插件加载功能，没有提供任何插件的安装、删除、更新这些管理功能。估计作者也是本着 Unix 哲学（程序应该只关注一个目标，并尽可能把它做好）思想，将来也不会加入任何管理功能。</p>
+<p>但是如果要打造一套完善的 Vim 插件方案，一个靠谱的插件自动化管理系统是必不可少的。就像 Chrome 的插件系统一样，插件可以：</p>
+<ul>
+<li>自动安装，新拿到一台电脑，可以方便地自动下载插件</li>
+<li>自动化升级，不需要繁琐的文件拷贝更新操作</li>
+</ul>
+<p>因此就有了 Vundle 这类工具，通过一系列的脚本，来实现这些功能。</p>
+<h2 id="Pathogen_+_Git">Pathogen + Git</h2>
+<p>我自己比较喜欢的方案是 Git + Pathogen，本质上和 Vundle 没有区别（Git 就是各种牛逼的脚本组合起来的），但是有着很多让我着迷的优点：</p>
+<ul>
+<li>只依赖于 Git（Pathogen 通过 Git 下载）</li>
+<li>Github 上几乎有全部的 vim 插件库</li>
+<li>符合 Unix 哲学，Pathogen 做加载，Git 做插件管理，这个组合非常漂亮</li>
+</ul>
+<h3 id="准备工作">准备工作</h3>
+<p>首先，备份你原先的 .vim 配置，并创建一个新的 .vim 目录，以及放置插件的 bundle 目录：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+</pre></td><td class="code"><pre>$ mv .vim{,.bak}
+$ mv .vimrc{,.bak}
+$ mkdir -pv .vim/bundle
+&gt; .vim
+&gt; .vim/bundle
+</pre></td></tr></table></figure>
+
+<p>然后把 .vim 目录变成一个 Git 仓库。做这一步非常简单，切换到 .vim 目录下，执行<code>git init</code>命令，git 会创建一个 .git 目录：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+6
+7
+8
+</pre></td><td class="code"><pre>$ <span class="built_in">cd</span> .vim && git init
+&gt; Initialized empty Git repository <span class="keyword">in</span> /Users/pw/.vim/.git/
+$ ls -al
+&gt; total <span class="number">0</span>
+&gt; drwxr-xr-x   <span class="number">4</span> pw  staff  <span class="number">136</span> Feb  <span class="number">4</span> <span class="number">14</span>:<span class="number">01</span> .
+&gt; drwxr-xr-x   <span class="number">4</span> pw  staff  <span class="number">136</span> Feb  <span class="number">4</span> <span class="number">14</span>:<span class="number">01</span> ..
+&gt; drwxr-xr-x  <span class="number">10</span> pw  staff  <span class="number">340</span> Feb  <span class="number">4</span> <span class="number">14</span>:<span class="number">01</span> .git
+&gt; drwxr-xr-x   <span class="number">2</span> pw  staff   <span class="number">68</span> Feb  <span class="number">4</span> <span class="number">14</span>:<span class="number">01</span> bundle
+</pre></td></tr></table></figure>
+
+<p>至此，准备工作就完成。以下的命令如果没有特别说明，都是在 .vim 这个目录中敲入的。</p>
+<h3 id="安装_Pathogen">安装 Pathogen</h3>
+<p>安装插件的命令是：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre>1
+</pre></td><td class="code"><pre>$ git submodule add 插件的Git仓库地址 bundle/插件名字
+</pre></td></tr></table></figure>
+
+<p>Pathogen 将会是我们通过 Git 安装的第一个插件：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+6
+7
+</pre></td><td class="code"><pre>$ git submodule add git://github.com/tpope/vim-pathogen.git bundle/vim-pathogen
+&gt; Cloning into bundle/pathogen...
+&gt; remote: Counting objects: <span class="number">218</span>, done.
+&gt; remote: Compressing objects: <span class="number">100</span>% (<span class="number">117</span>/<span class="number">117</span>), done.
+&gt; remote: Total <span class="number">218</span> (delta <span class="number">59</span>), reused <span class="number">202</span> (delta <span class="number">45</span>)
+&gt; Receiving objects: <span class="number">100</span>% (<span class="number">218</span>/<span class="number">218</span>), <span class="number">26.40</span> KiB | <span class="number">23</span> KiB/s, done.
+&gt; Resolving deltas: <span class="number">100</span>% (<span class="number">59</span>/<span class="number">59</span>), done.
+</pre></td></tr></table></figure>
+
+<p>通常来讲，一个插件下载完之后就已经可以使用了，但是对于 Pathogen 这个”插件中的插件“来说，还要多一，创建一个非常简单的 .vimrc 文件，加载 pathogen</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre>1
+2
+</pre></td><td class="code"><pre>$ <span class="built_in">echo</span> <span class="operator">-e</span> <span class="string">"runtime bundle/vim-pathogen/autoload/pathogen.vim\ncall pathogen#infect()\nHelptags"</span> &gt;&gt; .vimrc
+$ ln -sf `<span class="built_in">pwd</span>`/.vimrc <span class="variable">$HOME</span>/
+</pre></td></tr></table></figure>
+
+<h3 id="安装其他插件">安装其他插件</h3>
+<p>方法跟安装 Pathogen 是一样的，在 .vim 目录下执行：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre>1
+</pre></td><td class="code"><pre>$ git submodule add 插件的Git仓库地址 bundle/插件名字
+</pre></td></tr></table></figure>
+
+<p>以 NERDTree 为例，仓库地址是<code>git://github.com/scrooloose/nerdtree.git</code>：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre>1
+</pre></td><td class="code"><pre>$ git submodule add git://github.com/scrooloose/nerdtree.git bundle/nerdtree
+</pre></td></tr></table></figure>
+
+<h3 id="升级插件">升级插件</h3>
+<p>单独升级插件，只要先进入插件目录，然后执行：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre>1
+</pre></td><td class="code"><pre>git checkout master; git pull
+</pre></td></tr></table></figure>
+
+<p>通过<code>git submodule foreach</code>来可以一次性升级全部插件：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre>1
+</pre></td><td class="code"><pre>$ git submodule foreach <span class="string">'git checkout master && git pull'</span>
+</pre></td></tr></table></figure>
+
+<h3 id="删除插件">删除插件</h3>
+<p>删除一个插件稍微繁琐了一点（相比较添加和升级），需要两条命令：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre>1
+2
+</pre></td><td class="code"><pre>$ rm -rf bundle/插件名
+$ git rm -r bundle/插件名
+</pre></td></tr></table></figure>
+
+<h3 id="把整个_-vim_目录发布到_Github_上去">把整个 .vim 目录发布到 Github 上去</h3>
+<p>如果你是一直按照我的教程做到这里，这时你可以通过<code>git status</code>查看一下 .vim 这个 Git 仓库的状态：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+</pre></td><td class="code"><pre>$ git status
+&gt; <span class="comment"># On branch master</span>
+&gt; <span class="comment">#</span>
+&gt; <span class="comment"># Initial commit</span>
+&gt; <span class="comment">#</span>
+&gt; <span class="comment"># Changes to be committed:</span>
+&gt; <span class="comment">#   (use "git rm --cached &lt;file&gt;..." to unstage)</span>
+&gt; <span class="comment">#</span>
+&gt; <span class="comment">#   new file:   .gitmodules</span>
+&gt; <span class="comment">#   new file:   bundle/nerdtree</span>
+&gt; <span class="comment">#   new file:   bundle/pathogen</span>
+&gt; <span class="comment">#</span>
+&gt; <span class="comment"># Untracked files:</span>
+&gt; <span class="comment">#   (use "git add &lt;file&gt;..." to include in what will be committed)</span>
+&gt; <span class="comment">#</span>
+&gt; <span class="comment">#   .vimrc</span>
+</pre></td></tr></table></figure>
+
+<p>可以看到 Git 的暂存区中还没有加入 .vimrc（如果你不懂什么是 Git 暂存区，没关系，按照教程继续往下走，不过最好去看一下 Pro Git 这本书），将 .vimrc 加入暂存，并提交：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+6
+7
+8
+</pre></td><td class="code"><pre>$ git add .vimrc
+$ git commit -m <span class="string">'ADD: pathogen & nerdtree'</span>
+&gt; master (root-commit) ba3afbd] ADD: pathogen & nerdtree
+&gt; <span class="number">4</span> files changed, <span class="number">11</span> insertions(+), <span class="number">0</span> deletions(-)
+&gt;  create mode <span class="number">100644</span> .gitmodules
+&gt;  create mode <span class="number">100644</span> .vimrc
+&gt;  create mode <span class="number">160000</span> bundle/nerdtree
+&gt;  create mode <span class="number">160000</span> bundle/pathogen
+</pre></td></tr></table></figure>
+
+<p>在做下一步之前，你需要在 github 上开一个远程仓库（这一步就不给出具体教程了，非常简单，在 Github 上操作）。然后把本地 Git 仓库推送到 Github 上。例如，我的 vim 仓库地址是<code>git@github.com:perfectworks/vim.git</code>：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre>1
+2
+</pre></td><td class="code"><pre>$ git remote add origin git@github.com:perfectworks/vim.git
+$ git push origin master
+</pre></td></tr></table></figure>
+
+<p>然后去 Github 上看看，可以发现，所有通过 Git 加入的 Vim 插件都是以一个链接直接链到插件的 Github 仓库，看起来非常整齐漂亮。</p>
+]]></content>
+    
+    
+      <category term="vim" scheme="http://lostjs.com/tags/vim/"/>
+    
+  </entry>
+  
+  <entry>
+    <title><![CDATA[Git 零基础介绍]]></title>
+    <link href="http://lostjs.com/2011/12/29/git/"/>
+    <id>http://lostjs.com/2011/12/29/git/</id>
+    <published>2011-12-29T07:43:00.000Z</published>
+    <updated>2014-04-22T15:13:03.000Z</updated>
+    <content type="html"><![CDATA[<p>Git 是一个由 Linus 为了更好地管理 Linux 内核而创立的分布式版本控制软件。其设计思想与实现原理都与传统的版本控制工具如 svn 等有较大差异。分布式的模型带来了更快的操作速度，更好的开发模式。</p>
+<p>这是一次公司内分享的 slide，从 Git 的八卦历史开始讲起，介绍了 Git 的基本原理和命令。</p>
+<div id="__ss_11729683"><object id="__sse11729683" width="425" height="355"><param name="movie" value="http://static.slidesharecdn.com/swf/ssplayer2.swf?doc=git-120224013548-phpapp01&stripped_title=git-11729683&userName=perfectworks" /><param name="allowFullScreen" value="true"/><param name="allowScriptAccess" value="always"/><param name="wmode" value="transparent"/><embed name="__sse11729683" src="http://static.slidesharecdn.com/swf/ssplayer2.swf?doc=git-120224013548-phpapp01&stripped_title=git-11729683&userName=perfectworks" type="application/x-shockwave-flash" allowscriptaccess="always" allowfullscreen="true" wmode="transparent" width="425" height="355"></embed></object></div>
+]]></content>
+    
+    
+      <category term="git" scheme="http://lostjs.com/tags/git/"/>
+    
+  </entry>
+  
+</feed>

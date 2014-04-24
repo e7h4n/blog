@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>标签 - javascript | Lost JavaScript</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta content="website" property="og:type">
+<meta property="og:title">
+<meta content="http://lostjs.com/tags/javascript/" property="og:url">
+<meta property="og:image">
+<meta content="Lost JavaScript" property="og:site_name">
+<meta property="og:description">
+<meta content="summary" name="twitter:card">
+  
+    <link rel="alternative" href="/atom.xml" title="Lost JavaScript" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  <link href="http://fonts.googleapis.com/css?family=Source+Code+Pro" rel="stylesheet" type="text/css">
+  <link rel="stylesheet" href="/css/style.css" type="text/css">
+  <!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+  
+<script type="text/javascript">
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-450827-9']);
+  _gaq.push(['_trackPageview']);
+
+  (function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+  })();
+</script>
+
+
+</head>
+
+<body>
+  <div id="container">
+    <div id="wrap">
+      <header id="header">
+  <div id="banner"></div>
+  <div id="header-outer" class="outer">
+    <div id="header-title" class="inner">
+      <h1 id="logo-wrap">
+        <a href="/" id="logo">Lost JavaScript</a>
+      </h1>
+      
+        <h2 id="subtitle-wrap">
+          <a href="/" id="subtitle">一个 Pure JavaScript 工程师的博客</a>
+        </h2>
+      
+    </div>
+    <div id="header-inner" class="inner">
+      <nav id="main-nav">
+        <a id="main-nav-toggle" class="nav-icon"></a>
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        
+          <a id="nav-rss-link" class="nav-icon" href="/atom.xml" title="RSS Feed"></a>
+        
+        <a id="nav-search-btn" class="nav-icon" title="搜索"></a>
+      </nav>
+      <div id="search-form-wrap">
+        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" results="0" class="search-form-input" placeholder="Search"><input type="submit" value="&#xF002;" class="search-form-submit"><input type="hidden" name="q" value="site:http://lostjs.com"></form>
+      </div>
+    </div>
+  </div>
+</header>
+
+      <div class="outer">
+        <section id="main">
+  
+    <article id="post-accurate-countdown-in-javascript" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2013/07/20/accurate-countdown-in-javascript/" class="article-date">
+  <time datetime="2013-07-20T07:03:00.000Z" itemprop="datePublished">2013年07月20日</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2013/07/20/accurate-countdown-in-javascript/">setInterval 倒计时陷阱</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>最近发现页面上的一个倒计时功能出现了比较大的误差，debug 之后发现误差是由于 <code>setInterval</code> 不能实现准确执行任务导致的，例如下面这个例子：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+</pre></td><td class="code"><pre>    <span class="keyword">var</span> now = +<span class="keyword">new</span> <span class="built_in">Date</span>();
+    setInterval(<span class="function"><span class="keyword">function</span> <span class="params">()</span> {</span>
+        now += <span class="number">100</span>;
+        console.log(<span class="string">'diff'</span>, now - (+<span class="built_in">Date</span>.now()));
+    }, <span class="number">100</span>);
+</pre></td></tr></table></figure>
+
+<blockquote><br>    <div id="demo1"><br>        <button id="demo1Run">运行</button> <button id="demo1Stop">停止</button><br>        <table><br>            <tr><br>                <td>执行次数：</td><br>                <td id="demo1Count">0</td><br>            </tr><br>            <tr><br>                <td>累计误差(ms)：</td><br>                <td id="demo1Diff">0</td><br>            </tr><br>            <tr><br>                <td>平均误差(ms)：</td><br>                <td id="demo1Avg">0</td><br>            </tr><br>        </table><br>    </div><br></blockquote>
+
+<script type="text/javascript">
+(function () {
+    var timer = null;
+    var countEl = document.getElementById('demo1Count');
+    var diffEl = document.getElementById('demo1Diff');
+    var avgEl = document.getElementById('demo1Avg');
+
+    document.getElementById('demo1Run').onclick = function () {
+        var count = 0;
+        var now = +new Date();
+        clearInterval(timer);
+        timer = setInterval(function () {
+            now += 100;
+            count += 1;
+            countEl.innerHTML = count;
+            diffEl.innerHTML = now - (+Date.now());
+            avgEl.innerHTML = (now - (+Date.now())) / count;
+        }, 100);
+    };
+
+    document.getElementById('demo1Stop').onclick = function () {
+        clearInterval(timer);
+    };
+}());
+</script>
+
+<p>在我的 chrome 浏览器上平均每次执行时会有 1ms 的延迟。由于这个延迟是累加的，当代码执行 1000 次时误差就积累到了 1 秒。</p>
+<p>想到的解决方法就是在执行过程中不停的修正下一次运行函数的时间，由于<code>setInterval</code> 的间隔时间是在创建 <code>timer</code> 时指定的，所以就只能用 <code>setTimeout</code> 来实现定时器。</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+6
+7
+8
+</pre></td><td class="code"><pre>    <span class="keyword">var</span> now = +<span class="keyword">new</span> <span class="built_in">Date</span>();
+    setTimeout(<span class="function"><span class="keyword">function</span> <span class="title">run</span><span class="params">()</span> {</span>
+        now += <span class="number">100</span>;
+        <span class="keyword">var</span> fix = now - (+<span class="built_in">Date</span>.now());
+        console.log(<span class="string">'diff:'</span>, fix)
+
+        setTimeout(run, <span class="number">100</span> + fix);
+    }, <span class="number">100</span>);
+</pre></td></tr></table></figure>
+
+<blockquote><br>    <div id="demo2"><br>        <button id="demo2Run">运行</button> <button id="demo2Stop">停止</button><br>        <table><br>            <tr><br>                <td>执行次数：</td><br>                <td id="demo2Count">0</td><br>            </tr><br>            <tr><br>                <td>误差(ms)：</td><br>                <td id="demo2Diff">0</td><br>            </tr><br>            <tr><br>                <td>平均每次执行误差(ms)：</td><br>                <td id="demo2Avg">0</td><br>            </tr><br>        </table><br>    </div><br></blockquote>
+
+<script type="text/javascript">
+(function () {
+    var timer = null;
+    var countEl = document.getElementById('demo2Count');
+    var diffEl = document.getElementById('demo2Diff');
+    var avgEl = document.getElementById('demo2Avg');
+
+    document.getElementById('demo2Run').onclick = function () {
+        var count = 0;
+        var now = +new Date();
+        clearInterval(timer);
+
+        timer = setTimeout(function run() {
+            now += 1000;
+
+            var diff = now - (+Date.now());
+
+            count += 1;
+            countEl.innerHTML = count;
+            diffEl.innerHTML = diff;
+            avgEl.innerHTML = diff / count;
+
+            timer = setTimeout(run, 1000 + diff);
+        }, 1000);
+    };
+
+    document.getElementById('demo2Stop').onclick = function () {
+        clearInterval(timer);
+    };
+}());
+</script>
+
+<p>用 <code>setTimeout</code> 就解决了 <code>setInterval</code> 误差累计的问题。</p>
+<p>简单封装一下：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+</pre></td><td class="code"><pre>    <span class="function"><span class="keyword">function</span> <span class="title">accurateInterval</span><span class="params">(callback, interval)</span> {</span>
+        <span class="keyword">var</span> now = +<span class="keyword">new</span> <span class="built_in">Date</span>();
+
+        setTimeout(<span class="function"><span class="keyword">function</span> <span class="title">run</span><span class="params">()</span> {</span>
+            now += interval;
+            <span class="keyword">var</span> fix = now - (+<span class="built_in">Date</span>.now());
+
+            setTimeout(run, interval + fix);
+
+            callback();
+        }, interval);
+    }
+</pre></td></tr></table></figure>
+
+<p>末尾，抛几块砖</p>
+<ul>
+<li>在 <code>accurateinterval</code> 函数中，是否可以先执行 <code>callback</code> 函数，再 <code>setTimeout</code>？</li>
+<li>当 <code>callback</code> 函数的执行时间超过定时间隔后会出现什么事情？</li>
+<li><code>accurateinterval</code> 实现的倒计时，会出现走时不均匀的问题。也就是说倒计时的数字会时快时慢，如何解决这个问题？</li>
+</ul>
+
+        <p>- FIN -</p>
+      
+    </div>
+    
+    <footer class="article-footer">
+      <a data-url="http://lostjs.com/2013/07/20/accurate-countdown-in-javascript/" data-id="dxumfafxmyw837kg" class="article-share-link">分享</a>
+      
+      
+        <a href="http://lostjs.com/2013/07/20/accurate-countdown-in-javascript/#comments" class="article-comment-link">评论</a>
+      
+      
+  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/javascript/">javascript</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+
+
+  
+  
+
+</section>
+        
+          <aside id="sidebar">
+  
+    
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">标签</h3>
+    <div class="widget">
+      <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/docker/">docker</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/git/">git</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/grunt/">grunt</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/hexo/">hexo</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/javascript/">javascript</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/mustache/">mustache</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/node/">node</a><span class="tag-list-count">6</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/vim/">vim</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/zsh/">zsh</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/招聘/">招聘</a><span class="tag-list-count">1</span></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">归档</h3>
+    <div class="widget">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2014/04">四月 2014</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2014/02">二月 2014</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2014/01">一月 2014</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2013/10">十月 2013</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2013/07">七月 2013</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2012/12">十二月 2012</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2012/09">九月 2012</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2012/08">八月 2012</a><span class="archive-list-count">2</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2012/02">二月 2012</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2011/12">十二月 2011</a><span class="archive-list-count">1</span></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">最新文章</h3>
+    <div class="widget">
+      <ul>
+        
+          <li>
+            <a href="/2014/04/24/router-in-express-4/">浅谈 Express 4.0 Router 模块</a>
+          </li>
+        
+          <li>
+            <a href="/2014/04/24/upgrade-express-4/">Express 4.0 升级手记</a>
+          </li>
+        
+          <li>
+            <a href="/2014/04/23/replace-nginx-by-node/">用 node 代替 nginx 做请求分发</a>
+          </li>
+        
+          <li>
+            <a href="/2014/04/22/from-octopress-to-hexo/">把 blog 从 octopress 迁移到 hexo</a>
+          </li>
+        
+          <li>
+            <a href="/2014/04/21/a-simple-promise-cache-by-lru-cache/">异步、promise 与缓存</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+
+  
+</aside>
+        
+      </div>
+      <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      &copy; 2014 Ethan (pw) Zhang<br>
+      Powered by <a href="http://zespia.tw/hexo/" target="_blank">Hexo</a>
+    </div>
+  </div>
+</footer>
+    </div>
+    <nav id="mobile-nav">
+  
+    <a href="/" class="mobile-nav-link">Home</a>
+  
+</nav>
+    
+
+
+<script type="text/javascript">
+var duoshuoQuery = {
+    short_name: "lostjs"
+};
+(function () {
+    var ds = document.createElement('script');
+    ds.type = 'text/javascript';
+    ds.async = true;
+    ds.src = (document.location.protocol == 'https:' ? 'https:' : 'http:') + '//static.duoshuo.com/embed.js';
+    ds.charset = 'UTF-8';
+    (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(ds);
+})();
+</script>
+
+
+<script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+
+
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css" media="screen" type="text/css">
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+
+
+<script type="text/javascript" src="/js/script.js"></script>
+
+  </div>
+</body>
+</html>
