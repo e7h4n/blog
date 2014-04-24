@@ -28,9 +28,16 @@
         <div class="author">
           <img src="http://www.gravatar.com/avatar/c14b9141b9e07f405833634d348b8b01?s=48" alt="author">
           <div class="content">
-            Posted By 张宇辰 <time class="bullet" datetime="<%= date_xml(post.date) %>" itemprop="datePublished"><%= date(post.date, null) %></time>
+          Posted By 张宇辰
+          <span class="bullet">
+              <a href="http://weibo.com/perfectworks" rel="nofollow">@__pw__</a>
+          </span>
+          <time class="bullet" datetime="<%= date_xml(post.date) %>" itemprop="datePublished"><%= date(post.date, null) %></time>
             <p class="license">
-            原创文章<span class="bullet">版权声明：自由转载-非商用-非衍生-保持署名</span><a class="bullet" href="http://creativecommons.org/licenses/by-nc-nd/3.0/deed.zh" rel="nofollow" target="_blank">Creative Commons BY-NC-ND 3.0</a>
+            原创文章<span class="bullet">版权声明：自由转载-非商用-非衍生-保持署名</span>
+            <span class="bullet">
+                <a href="http://creativecommons.org/licenses/by-nc-nd/3.0/deed.zh" rel="nofollow" target="_blank">Creative Commons BY-NC-ND 3.0</a>
+            </span>
             </p>
           </div>
         </div>

@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <feed xmlns="http://www.w3.org/2005/Atom">
   <title><![CDATA[Lost JavaScript]]></title>
-  <subtitle><![CDATA[一个 Pure JavaScript 工程师的博客]]></subtitle>
+  <subtitle><![CDATA[blog of pw]]></subtitle>
   <link href="/atom.xml" rel="self"/>
   <link href="http://lostjs.com/"/>
-  <updated>2014-04-24T15:17:44.013Z</updated>
+  <updated>2014-04-24T15:29:08.878Z</updated>
   <id>http://lostjs.com/</id>
   
   <author>
