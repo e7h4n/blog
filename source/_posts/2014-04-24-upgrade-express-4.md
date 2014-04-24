@@ -15,9 +15,10 @@ express.logger         === require('morgan')
 express.json           === require('body-parser').json
 express.urlencoded     === require('body-parser').urlencoded
 express.methodOverride === require('method-override')
+express.static         === require('serve-static')
 ```
 
-完整列表参考 [connect 中间件列表]
+看起来复杂，实际上只要做个字符串替换就成了。完整列表参考 [connect 中间件列表]。
 
 ## 不再需要 `app.use(app.router)`
 
