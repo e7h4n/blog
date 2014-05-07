@@ -3,6 +3,7 @@
   "version": "2.5.3",
   "private": true,
   "dependencies": {
-    "hexo-generator-feed": "~0.1.0"
+    "hexo-generator-feed": "~0.1.0",
+    "hexo-minifer": "0.0.2"
   }
 }

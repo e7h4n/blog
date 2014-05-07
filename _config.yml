@@ -106,7 +106,8 @@ stylus:
 deploy:
   type: git
   repository:
-      gitcafe: git@gitcafe.com:perfectworks/perfectworks.git,gitcafe-pages
+    gitcafe: git@gitcafe.com:perfectworks/perfectworks.git,gitcafe-pages
+    github: git@github.com:perfectworks/perfectworks.github.com.git
 
 feed:
     type: atom
