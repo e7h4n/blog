@@ -49,7 +49,7 @@
       </h1>
       
         <h2 id="subtitle-wrap">
-          <a href="/" id="subtitle">一个 Pure JavaScript 工程师的博客</a>
+          <a href="/" id="subtitle">天赋即兴趣 兴趣即天赋</a>
         </h2>
       
     </div>
@@ -75,6 +75,245 @@
 
       <div class="outer">
         <section id="main">
+  
+    <article id="post-router-in-express-4" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2014/04/24/router-in-express-4/" class="article-date">
+  <time datetime="2014-04-24T14:02:45.000Z" itemprop="datePublished">2014年04月24日</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2014/04/24/router-in-express-4/">浅谈 Express 4.0 Router 模块</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>Express 是目前 node 社区最主要的 Web 框架，前不久刚刚升级到了 4.0 版本。与 3.x 版本比，4.0 版本拥有一个全新设计的 Router 模块，开发者可以更方便的对 middleware 进行隔离与重用。</p>
+<h2 id="Express_3-x_时代的中间件_(middleware)_与控制器_(controller)">Express 3.x 时代的中间件 (middleware) 与控制器 (controller)</h2>
+<p>在 express 3.x 版本中，一个控制器往往不是业务逻辑的全部，中间件才是业务逻辑的大头。例如一个处理用户订单的服务，往往验证用户权限、读写数据库等主要逻辑工作都在中间件中就完成了，而控制器所做的大部分工作就是拼数据给视图 (view）。</p>
+<p>一个标准的 URL 映射写法如下:</p>
+<figure class="highlight javascript"><figcaption><span>app.js</span></figcaption><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+</pre></td><td class="code"><pre><span class="comment">// 这里是一些中间件，express 的常见写法</span>
+<span class="keyword">var</span> A = <span class="built_in">require</span>(<span class="string">'./middlewares/A'</span>);
+<span class="keyword">var</span> B = <span class="built_in">require</span>(<span class="string">'./middlewares/B'</span>);
+<span class="keyword">var</span> C = <span class="built_in">require</span>(<span class="string">'./middlewares/C'</span>);
+app.get(<span class="string">'/books'</span>, A, B, C, <span class="built_in">require</span>(<span class="string">'./controllers/book'</span>).index);
+</pre></td></tr></table></figure>
+
+
+<figure class="highlight javascript"><figcaption><span>controllers/book.js</span></figcaption><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+6
+7
+</pre></td><td class="code"><pre>exports.index = <span class="function"><span class="keyword">function</span> <span class="params">(req, res)</span> {</span>
+    <span class="keyword">var</span> retA = req.A; <span class="comment">// 中间件 A 的输出结果</span>
+    <span class="keyword">var</span> retB = req.B; <span class="comment">// 中间件 B 的输出结果</span>
+    <span class="keyword">var</span> retC = req.C; <span class="comment">// 中间件 C 的输出结果</span>
+    <span class="comment">// ... 其余程序逻辑</span>
+}
+<span class="comment">// ...</span>
+</pre></td></tr></table></figure>
+
+<p>控制器与中间件的相互依赖关系是完全隐式的，不能通过代码分析来得到任何的保证。中间件的插入与控制器的代码被分离在了 <code>app.js</code> 与 <code>controllers/book.js</code> 两个文件中，不仅阅读起来不直观，修改起来也很容易出错。假如有一天团队的新同事修改了 <code>book.js</code> 去掉了中间件 <code>C</code> 的逻辑，但是忘记了修改 <code>app.js</code>（这是一个非常容易犯的错误），那么 express 不会报任何错误，code review 也很难发现，因为这两处代码离得实在是太远了。</p>
+<p>这种设计同时会导致测试非常困难，因为单独 <code>require</code> 一个控制器是毫无意义的，因为控制器本身不可能独立于中间件来执行。如果要测试控制器，要么在单元测试代码在控制器前里现场装配中间件，要么就 mock 请求通过中间件后的数据。无论哪种做法，都需要单元测试完全了解中间件与控制器的业务逻辑才可能实现，这样就增大了单元测试的难度。</p>
+<p>一个解决方法是将二者的依赖关系倒置，把控制器模块写成一个接收 <code>app</code> 作为参数的函数，在函数内部装配中间件与控制器。代码如下:</p>
+<figure class="highlight javascript"><figcaption><span>app.js</span></figcaption><table><tr><td class="gutter"><pre>1
+</pre></td><td class="code"><pre><span class="built_in">require</span>(<span class="string">'./controllers/book'</span>)(app);
+</pre></td></tr></table></figure>
+
+
+<figure class="highlight javascript"><figcaption><span>controllers/book.js</span></figcaption><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+</pre></td><td class="code"><pre><span class="keyword">var</span> A = <span class="built_in">require</span>(<span class="string">'../middlewares/A'</span>);
+<span class="keyword">var</span> B = <span class="built_in">require</span>(<span class="string">'../middlewares/B'</span>);
+<span class="keyword">var</span> C = <span class="built_in">require</span>(<span class="string">'../middlewares/C'</span>);
+
+module.exports = <span class="function"><span class="keyword">function</span> <span class="params">(app)</span> {</span>
+    app.get(<span class="string">'/books'</span>, A, B, C, <span class="function"><span class="keyword">function</span> <span class="params">(req, res)</span> {</span>
+        <span class="keyword">var</span> retA = req.A; <span class="comment">// 中间件 A 的输出结果</span>
+        <span class="keyword">var</span> retB = req.B; <span class="comment">// 中间件 B 的输出结果</span>
+        <span class="keyword">var</span> retC = req.C; <span class="comment">// 中间件 C 的输出结果</span>
+        <span class="comment">// ... 其余程序逻辑</span>
+    });
+};
+<span class="comment">// ...</span>
+</pre></td></tr></table></figure>
+
+<p>这样做虽然提高了代码的内聚性，但是直接把 <code>app</code> 暴露给其它模块使得 <code>app</code> 有被滥用的风险，让二者从面向接口的松散耦合变成了直接操纵实例的强耦合。同时这种方案不仅没有提高可测试性，反而大大提高了单元测试的难度（想想现在都需要 mock 一个 <code>app</code> 了 T_T）。</p>
+<p>为了更好的解决这个问题，Express 4.0 给出了更好的解决方式: <code>express.Router</code>。</p>
+<h2 id="使用_express-Router_来组织控制器与中间件">使用 <code>express.Router</code> 来组织控制器与中间件</h2>
+<p><code>express.Router</code> 可以认为是一个微型的只用来处理中间件与控制器的 <code>app</code>，它拥有和 <code>app</code> 类似的方法，例如 <code>get</code>、<code>post</code>、<code>all</code>、<code>use</code> 等等。上面的例子使用 <code>express.Router</code> 可以修改为:</p>
+<figure class="highlight javascript"><figcaption><span>app.js</span></figcaption><table><tr><td class="gutter"><pre>1
+</pre></td><td class="code"><pre>app.use(<span class="built_in">require</span>(<span class="string">'./controllers/book'</span>));
+</pre></td></tr></table></figure>
+
+
+<figure class="highlight javascript"><figcaption><span>controllers/book.js</span></figcaption><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+</pre></td><td class="code"><pre><span class="keyword">var</span> router = <span class="built_in">require</span>(<span class="string">'express'</span>).Rouer(); <span class="comment">// 新建一个 router</span>
+
+<span class="keyword">var</span> A = <span class="built_in">require</span>(<span class="string">'../middlewares/A'</span>);
+<span class="keyword">var</span> B = <span class="built_in">require</span>(<span class="string">'../middlewares/B'</span>);
+<span class="keyword">var</span> C = <span class="built_in">require</span>(<span class="string">'../middlewares/C'</span>);
+
+<span class="comment">// 在 router 上装备控制器与中间件</span>
+router.get(<span class="string">'/books'</span>, A, B, C, <span class="function"><span class="keyword">function</span> <span class="params">(req, res)</span> {</span>
+    <span class="keyword">var</span> retA = req.A; <span class="comment">// 中间件 A 的输出结果</span>
+    <span class="keyword">var</span> retB = req.B; <span class="comment">// 中间件 B 的输出结果</span>
+    <span class="keyword">var</span> retC = req.C; <span class="comment">// 中间件 C 的输出结果</span>
+    <span class="comment">// ... 其余程序逻辑</span>
+});
+
+<span class="comment">// ...</span>
+
+<span class="comment">// 返回 router 供 app 使用</span>
+module.exports = router;
+</pre></td></tr></table></figure>
+
+<p>通过 <code>express.Router</code>，控制器与中间件的代码紧密的联系在一起，并且避免了传递 <code>app</code> 的潜在风险。同时，一个 <code>router</code> 就是一个完整的功能模块，不需要任何装配就可以执行。这一点对于单元测试来说非常简单。</p>
+<h2 id="express-Router_的其他特性"><code>express.Router</code> 的其他特性</h2>
+<h3 id="中间件重用">中间件重用</h3>
+<p>上面提到过，<code>express.Router</code> 可以认为是一个迷你的 <code>app</code>，它拥有一个独立的中间件队列。这个特性可以用来共享一些常用的中间件，例如:</p>
+<figure class="highlight javascript"><figcaption><span>express 3.x</span></figcaption><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+6
+</pre></td><td class="code"><pre><span class="comment">// parseBook 是个中间件</span>
+app.get(<span class="string">'/books/:bookId'</span>, parseBook, viewBook);
+app.get(<span class="string">'/books/:bookId/edit'</span>, parseBook, editBook);
+app.get(<span class="string">'/books/:bookId/move'</span>, parseBook, moveBook);
+
+app.get(<span class="string">'/other_link'</span>, otherController);
+</pre></td></tr></table></figure>
+
+<p>Express 4.0 的写法:</p>
+<figure class="highlight javascript"><figcaption><span>express 4.0</span></figcaption><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+</pre></td><td class="code"><pre><span class="keyword">var</span> bookRouter = express.Router();
+app.use(<span class="string">'/books'</span>, bookRouter);
+
+bookRouter.use(parseBook);
+<span class="comment">// 下面三个控制器都会经过 parseBook 中间件</span>
+bookRouter.get(<span class="string">'/books/:bookId'</span>, viewBook);
+bookRouter.get(<span class="string">'/books/:bookId/edit'</span>, editBook);
+bookRouter.get(<span class="string">'/books/:bookId/move'</span>, moveBook);
+
+app.get(<span class="string">'/other_link'</span>, otherController); <span class="comment">// 不会经过 parseBook 中间件</span>
+</pre></td></tr></table></figure>
+
+<p>这个例子中 <code>bookRouter</code> 使 <code>parseBook</code> 这个中间件得到了充分的重用。</p>
+<h3 id="搭建_rest-ful_服务">搭建 rest-ful 服务</h3>
+<p>Code talks:</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+</pre></td><td class="code"><pre><span class="keyword">var</span> bookRouter = express.Router();
+bookRouter
+    .route(<span class="string">'/books/:bookId?'</span>)
+    .get(<span class="function"><span class="keyword">function</span> <span class="params">(req, res)</span> {</span>
+        <span class="comment">// ...</span>
+    })
+    .put(<span class="function"><span class="keyword">function</span> <span class="params">(req, res)</span> {</span>
+        <span class="comment">// ...</span>
+    })
+    .post(<span class="function"><span class="keyword">function</span> <span class="params">(req, res)</span> {</span>
+        <span class="comment">// ...</span>
+    })
+    .delete(<span class="function"><span class="keyword">function</span> <span class="params">(req, res)</span> {</span>
+        <span class="comment">// ...</span>
+    })
+</pre></td></tr></table></figure>
+
+<h2 id="小节">小节</h2>
+<p><code>express.Router</code> 是 express 4.0 中我最喜欢的更新，我认为 express 4.0 的代码里应该尽量多使用 <code>express.Router</code> 来代替原先的 <code>app.get</code> 方式。原先 URL 路径、中间件、控制器三者的松散关系可以借由 <code>express.Router</code> 变得紧密，整个控制器变成了一个不依赖于任何外部实例的独立模块，更有利于模块的拆分（想想把网站的各个模块都拆成独立的 router 吧），同时对于测试也更加友好。</p>
+
+        <p>- FIN -</p>
+      
+    </div>
+    
+    <footer class="article-footer">
+      <a data-url="http://lostjs.com/2014/04/24/router-in-express-4/" data-id="erse6cgwo6hafe91" class="article-share-link">分享</a>
+      
+      
+        <a href="http://lostjs.com/2014/04/24/router-in-express-4/#comments" class="article-comment-link">评论</a>
+      
+      
+  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/node/">node</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+
+
   
     <article id="post-upgrade-express-4" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-meta">
@@ -190,7 +429,7 @@ app.configure(<span class="string">'development'</span>, <span class="function">
     </div>
     
     <footer class="article-footer">
-      <a data-url="http://lostjs.com/2014/04/24/upgrade-express-4/" data-id="84cfaydqkp13d5kz" class="article-share-link">分享</a>
+      <a data-url="http://lostjs.com/2014/04/24/upgrade-express-4/" data-id="7ccy1t80jo829l4x" class="article-share-link">分享</a>
       
       
         <a href="http://lostjs.com/2014/04/24/upgrade-express-4/#comments" class="article-comment-link">评论</a>
@@ -328,118 +567,13 @@ http.createServer(<span class="function"><span class="keyword">function</span> <
     </div>
     
     <footer class="article-footer">
-      <a data-url="http://lostjs.com/2014/04/23/replace-nginx-by-node/" data-id="mgtpq3feuqo2rx8k" class="article-share-link">分享</a>
+      <a data-url="http://lostjs.com/2014/04/23/replace-nginx-by-node/" data-id="bhwf6mn0zic9ncki" class="article-share-link">分享</a>
       
       
         <a href="http://lostjs.com/2014/04/23/replace-nginx-by-node/#comments" class="article-comment-link">评论</a>
       
       
   <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/node/">node</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-
-
-  
-    <article id="post-from-octopress-to-hexo" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2014/04/22/from-octopress-to-hexo/" class="article-date">
-  <time datetime="2014-04-22T13:39:27.000Z" itemprop="datePublished">2014年04月22日</time>
-</a>
-    
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2014/04/22/from-octopress-to-hexo/">把 blog 从 octopress 迁移到 hexo</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p>之前用的一直用 <a href="http://octopress.org" target="_blank">octopress</a> 来写 blog。对于我来说 octopress 有个最大的缺点，就是它是 ruby 写的。导致我经常就要去搞搞 ruby 的版本啊、gem 啊什么杂七杂八的事情。今天无意间看到了一个 node 写的博客工具 <a href="http://hexo.io" target="_blank">hexo</a>，功能类似于 octorepss 但是部署成本比 octopress 低了不少，于是花了 15 分钟把整个博客从 octopress 迁移到了 hexo 上面。</p>
-<p>和 octopress 类似，hexo 也是一个静态页面生成工具。它允许用 markdown 语法来写文章，并且生成并上传整个网站到 github。它和 octopress 有着完全一样的文章格式，所以整个迁移过程非常轻松。</p>
-<h3 id="安装_hexo">安装 hexo</h3>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre>1
-2
-</pre></td><td class="code"><pre><span class="comment"># 国内网速慢可以尝试加上 --registry=http://r.cnpmjs.org 来使用国内镜像加速</span>
-npm install -g hexo
-</pre></td></tr></table></figure>
-
-<h3 id="初始化目录">初始化目录</h3>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre>1
-</pre></td><td class="code"><pre>hexo init blog && <span class="built_in">cd</span> blog
-</pre></td></tr></table></figure>
-
-<h3 id="迁移_octopress_的文章">迁移 octopress 的文章</h3>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre>1
-2
-</pre></td><td class="code"><pre>rm -rf <span class="built_in">source</span>/_posts
-cp <span class="operator">-a</span> OCTOPRESS_BLOG/<span class="built_in">source</span>/_posts <span class="built_in">source</span>/
-</pre></td></tr></table></figure>
-
-<h3 id="修改链接规则">修改链接规则</h3>
-<p>需要修改 <code>_config.yml</code> 中 <code>new_post_name</code> 一行:</p>
-<figure class="highlight yaml"><table><tr><td class="gutter"><pre>1
-</pre></td><td class="code"><pre><span class="symbol">new_post_name:</span> <span class="symbol">:year-</span><span class="symbol">:month-</span><span class="symbol">:day-</span><span class="symbol">:title</span>.md
-</pre></td></tr></table></figure>
-
-<h3 id="修改博客信息">修改博客信息</h3>
-<p>例如博客名称、网站地址等等，这些内容都在 <code>_config.yml</code> 中。另外还要将配置文件最后的 <code>deploy</code> 信息修改成 github 地址:</p>
-<figure class="highlight yaml"><table><tr><td class="gutter"><pre>1
-2
-3
-4
-</pre></td><td class="code"><pre>deploy:
-  repo: git@github.com:USER/REPO
-  <span class="class"><span class="keyword">type</span>: <span class="title">github</span></span>
-  brandh: master
-</pre></td></tr></table></figure>
-
-<p>如果博客用了顶级域名，还需要在 <code>source</code> 目录下新建一个 <code>CNAME</code> 文件:</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre>1
-</pre></td><td class="code"><pre><span class="built_in">echo</span> <span class="string">"lostjs.com"</span> &gt; <span class="built_in">source</span>/CNAME
-</pre></td></tr></table></figure>
-
-<h3 id="预览效果">预览效果</h3>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre>1
-2
-</pre></td><td class="code"><pre>hexo generate
-hexo server
-</pre></td></tr></table></figure>
-
-<p>然后浏览器访问本地 4000 端口即可。<code>hexo server</code> 和 octopress 的 <code>rake preview</code> 命令类似，会自动监听本地文件修改，但是如果修改的是 <code>_config.yml</code> 的话就需要重新 <code>hexo generate</code> 才能看到效果。</p>
-<h3 id="发布">发布</h3>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre>1
-</pre></td><td class="code"><pre>hexo deploy
-</pre></td></tr></table></figure>
-
-<p>迁移完毕，浏览器中试一下，原先的 url 都能正常访问。</p>
-<h1 id="整体感受">整体感受</h1>
-<p>hexo 给我的第一感受就是简单，不像 octopress 一样，hexo init 后生成的文件非常少，一眼看过去清除明了。在任何一台机器上只需要 <code>npm install -g hexo</code> 之后就能使用，不像 ruby 一样还需要搞 rbenv 并编译 ruby 之类的事情。另外一个感受就是速度快，不管是 generate 还是 deploy 都比 octopress 快了不少。整体来说 hexo 是一个非常值得一试的博客工具。</p>
-
-        <p>- FIN -</p>
-      
-    </div>
-    
-    <footer class="article-footer">
-      <a data-url="http://lostjs.com/2014/04/22/from-octopress-to-hexo/" data-id="hm76w7v3u4r9zrj2" class="article-share-link">分享</a>
-      
-      
-        <a href="http://lostjs.com/2014/04/22/from-octopress-to-hexo/#comments" class="article-comment-link">评论</a>
-      
-      
-  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/hexo/">hexo</a></li></ul>
 
     </footer>
   </div>
@@ -467,7 +601,7 @@ hexo server
   <div class="widget-wrap">
     <h3 class="widget-title">标签</h3>
     <div class="widget">
-      <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/docker/">docker</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/git/">git</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/grunt/">grunt</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/hexo/">hexo</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/javascript/">javascript</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/mustache/">mustache</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/node/">node</a><span class="tag-list-count">5</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/vim/">vim</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/zsh/">zsh</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/招聘/">招聘</a><span class="tag-list-count">1</span></li></ul>
+      <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/docker/">docker</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/git/">git</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/grunt/">grunt</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/hexo/">hexo</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/javascript/">javascript</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/mustache/">mustache</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/node/">node</a><span class="tag-list-count">6</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/vim/">vim</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/zsh/">zsh</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/招聘/">招聘</a><span class="tag-list-count">1</span></li></ul>
     </div>
   </div>
 
@@ -477,7 +611,7 @@ hexo server
   <div class="widget-wrap">
     <h3 class="widget-title">归档</h3>
     <div class="widget">
-      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2014/04">四月 2014</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2014/02">二月 2014</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2014/01">一月 2014</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2013/10">十月 2013</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2013/07">七月 2013</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2012/12">十二月 2012</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2012/09">九月 2012</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2012/08">八月 2012</a><span class="archive-list-count">2</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2012/02">二月 2012</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2011/12">十二月 2011</a><span class="archive-list-count">1</span></li></ul>
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2014/04">四月 2014</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2014/02">二月 2014</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2014/01">一月 2014</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2013/10">十月 2013</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2013/07">七月 2013</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2012/12">十二月 2012</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2012/09">九月 2012</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2012/08">八月 2012</a><span class="archive-list-count">2</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2012/02">二月 2012</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2011/12">十二月 2011</a><span class="archive-list-count">1</span></li></ul>
     </div>
   </div>
 
@@ -488,6 +622,10 @@ hexo server
     <h3 class="widget-title">最新文章</h3>
     <div class="widget">
       <ul>
+        
+          <li>
+            <a href="/2014/04/24/router-in-express-4/">浅谈 Express 4.0 Router 模块</a>
+          </li>
         
           <li>
             <a href="/2014/04/24/upgrade-express-4/">Express 4.0 升级手记</a>
@@ -505,10 +643,6 @@ hexo server
             <a href="/2014/04/21/a-simple-promise-cache-by-lru-cache/">异步、promise 与缓存</a>
           </li>
         
-          <li>
-            <a href="/2014/02/26/docker-behind-gfw/">Mac 下使用代理连接 docker 镜像服务器</a>
-          </li>
-        
       </ul>
     </div>
   </div>
@@ -522,7 +656,7 @@ hexo server
   
   <div class="outer">
     <div id="footer-info" class="inner">
-      &copy; 2014 Ethan (pw) Zhang<br>
+      &copy; 2014 张宇辰 (pw)<br>
       Powered by <a href="http://zespia.tw/hexo/" target="_blank">Hexo</a>
     </div>
   </div>

@@ -49,7 +49,7 @@
       </h1>
       
         <h2 id="subtitle-wrap">
-          <a href="/" id="subtitle">一个 Pure JavaScript 工程师的博客</a>
+          <a href="/" id="subtitle">天赋即兴趣 兴趣即天赋</a>
         </h2>
       
     </div>
@@ -75,6 +75,108 @@
 
       <div class="outer">
         <section id="main">
+  
+    <article id="post-grunt-the-best" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2012/12/08/grunt-the-best/" class="article-date">
+  <time datetime="2012-12-08T03:21:00.000Z" itemprop="datePublished">2012年12月08日</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2012/12/08/grunt-the-best/">Grunt -- 最好的前端构建框架</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>每个前端开发工程师都会遇到前端文件打包、压缩的问题。</p>
+<h2 id="Shell_-&gt;_Ant_-&gt;_Jake">Shell -&gt; Ant -&gt; Jake</h2>
+<p>最开始，我是用 shell 脚本调用 yuicompressor、cssmin 来压缩文件，非常简单，就像这样：</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+6
+7
+</pre></td><td class="code"><pre><span class="preprocessor">#!/usr/bin/env bash</span>
+
+cat src/a<span class="preprocessor">.js</span> src/b<span class="preprocessor">.js</span> src/c<span class="preprocessor">.js</span> &gt; dst/main<span class="preprocessor">.js</span>
+yuicompressor main<span class="preprocessor">.js</span>
+
+cat src/a<span class="preprocessor">.css</span> src/b<span class="preprocessor">.css</span> src/c<span class="preprocessor">.css</span> &gt; dst/main<span class="preprocessor">.css</span>
+cssmin main<span class="preprocessor">.css</span>
+</pre></td></tr></table></figure>
+
+<p>后来随着项目规模的逐渐增大，shell 脚本逐渐暴露出了很多问题，比如：</p>
+<ul>
+<li>不能自动下载依赖的外部命令，比如 yuicompressor/cssmin</li>
+<li>缺乏变量替换功能</li>
+<li>难以跨平台</li>
+<li>代码难以维护</li>
+</ul>
+<p>因此 shell 脚本在到了近百行以后就被放弃了，取而代之的是 Ant。Ant 内置了一些常见任务，比如文件复制、合并、变量替换等，并且可以方便的通过编写自定义任务来扩展。得益于 Java 灵活的扩展性，Ant 任务可以非常方便的在各个项目之间分享，很好的解决了 shell 脚本代码难以维护和迁移的缺点。Ant 还可以结合 ivy 自动解决依赖，实现了完全的跨平台支持。</p>
+<ul>
+<li>推荐文章：<a href="http://www.36ria.com/4411" target="_blank">ant入门指南—web前端开发七武器（1）</a></li>
+</ul>
+<p>但是，Ant 有个缺点：它是 Java 写的。Ant 如果要执行 js 代码，就必须通过 rhino，速度比 nodejs 慢了不少，作为一个 JavaScript 工程师，我非常希望可以直接用 js 来写构建脚本。</p>
+<p>最终让我放弃 Ant 的是一个新的项目。这个项目的特殊之处在于它用了 maven 作为 Java 的构建工具。之前用的各种 Ant 任务也就没有了用武之地。尽管我可以将 Ant 的任务迁移到 mavn 下面，但是我更希望能找到一个和后台语言完全无关的构建系统。</p>
+<p>因此在今年年初，我找到了一个 nodejs 环境下的构建框架 <a href="https://github.com/mde/jake" target="_blank">Jake</a>。Jake 的各种编译任务由 <code>Jakefile</code> 中定义（这一点很像 Make），<code>Jakefile</code> 实际上就是一个 js 文件，通过 nodejs 来执行压缩合并等常见任务。</p>
+<p>得益于 nodejs，Jake 执行 js 代码压缩的速度非常快，而且开发调试也更加方便。但是有个和 shell 脚本类似的问题：不同项目间的 Jake 任务难以重用，项目大了以后 <code>Jakefile</code> 依然很难维护，面对一个上千行的 <code>Jakefile</code>，和面对一个几百行的 shell 脚本的感觉差不了太多。</p>
+<p>以上就是我从 Shell 到 Ant 再到 Jake 的折腾经历。经历这么一圈之后，我发现一个好用的构建框架应该具有以下三个特点：</p>
+<ul>
+<li>跨平台（Ant, Jake）</li>
+<li>易维护、易迁移（Ant）</li>
+<li>开发简单（Shell，Jake）</li>
+</ul>
+<p><a href="http://gruntjs.com" target="_blank">grunt</a> 就是同时具有以上三个特点的前端构建框架。</p>
+<h2 id="grunt">grunt</h2>
+<p><a href="http://gruntjs.com" target="_blank">grunt</a> 是一个开源的基于任务 (Task) 的前端构建框架。它除了有 Jake 的优点（跨平台、开发简单）以外，还有一套设计良好的 task 框架用来组织各种构建任务。grunt 内置了几个非常常见的构建任务：</p>
+<ul>
+<li>concat - 组合各种文件</li>
+<li>lint - 用 JSHint 检查代码</li>
+<li>min - 用 UglifyJS 压缩代码</li>
+<li>qunit - 跑 QUnit 单元测试</li>
+<li>watch - 当源代码文件发生变化时自动执行任务</li>
+</ul>
+<p>除此之外还可以通过 npm 来方便的获取几百个现成的 task，比如用 closure 而不是 UglifyJS 来压缩 js，或者用 less 来生成 css，又或者用 jslint 而不是 jshint 来检查语法等，这些任务都可以在 npm 上找到。如果这些任务无法满足你的需求，grunt 还允许你方便的添加自定任务，就像写 nodejs 代码一样简单。自定任务还可以发布到 npm 上，通过 npm 在多个项目中共享这些任务。[fenbi-grunt-tasks] 就是粉笔网自定的 js 模块合并、handlebars 模板预编译任务 ([grunt-tbf2e] 貌似是淘宝的自定任务)。</p>
+<p>任务之间的组合也是 grunt 非常好用的一个特性，例如通过 watch 任务和 rsync 任务的结合，可以方便的实现当源码发生改变时，自动同步代码到服务器上。</p>
+<p>每次 grunt 执行时，grunt 都会去读取当前目录下的 <code>grunt.js</code> (就像 make 命令去寻找 Makefile 那样)，然后去读取其中的任务配置，例如源码目录等。grunt 最大的特点在于，配置文件中不包含任何的任务逻辑代码(OO 的开闭原则)。这一特性使得任务可以专心于“要做什么”而不是“要对什么做事情”，不再被特定的项目所绑架。</p>
+<ul>
+<li>推荐阅读：<a href="http://www.oschina.net/question/89964_47198" target="_blank">grunt简要介绍—基于任务的JavaScript项目命令行构建工具</a></li>
+</ul>
+<p>grunt 给我最大的感受是：原来天下有这么多码农都在为前端构建而奋斗！grunt 使得各个项目的构建脚本不再彼此孤立，使得打造整个公司的前端构建工具变的更加简单。</p>
+
+        <p>- FIN -</p>
+      
+    </div>
+    
+    <footer class="article-footer">
+      <a data-url="http://lostjs.com/2012/12/08/grunt-the-best/" data-id="6r8spz5ioeb9mg4a" class="article-share-link">分享</a>
+      
+      
+        <a href="http://lostjs.com/2012/12/08/grunt-the-best/#comments" class="article-comment-link">评论</a>
+      
+      
+  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/grunt/">grunt</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+
+
   
     <article id="post-zsh" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-meta">
@@ -185,7 +287,7 @@ $ PR curl https://twitter.com <span class="comment"># 相当于 http_proxy=127.0
     </div>
     
     <footer class="article-footer">
-      <a data-url="http://lostjs.com/2012/09/27/zsh/" data-id="1qqiwyvdq4kmws22" class="article-share-link">分享</a>
+      <a data-url="http://lostjs.com/2012/09/27/zsh/" data-id="ng039sug66orbbg6" class="article-share-link">分享</a>
       
       
         <a href="http://lostjs.com/2012/09/27/zsh/#comments" class="article-comment-link">评论</a>
@@ -350,82 +452,13 @@ console.log(Template.render(<span class="string">'hello'</span>, {name: <span cl
     </div>
     
     <footer class="article-footer">
-      <a data-url="http://lostjs.com/2012/08/30/mustache-precompile-with-hogan/" data-id="x6xvhy57p40o1ce5" class="article-share-link">分享</a>
+      <a data-url="http://lostjs.com/2012/08/30/mustache-precompile-with-hogan/" data-id="jxjhp7qrqg026xj0" class="article-share-link">分享</a>
       
       
         <a href="http://lostjs.com/2012/08/30/mustache-precompile-with-hogan/#comments" class="article-comment-link">评论</a>
       
       
   <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/mustache/">mustache</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-
-
-  
-    <article id="post-fenbi-recruit" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2012/08/30/fenbi-recruit/" class="article-date">
-  <time datetime="2012-08-30T07:48:00.000Z" itemprop="datePublished">2012年08月30日</time>
-</a>
-    
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2012/08/30/fenbi-recruit/">粉笔网招聘开发工程师</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p><a href="http://fenbi.com" target="_blank">粉笔网</a>是个学习社区，网易前高管离职创业。8 月 27 日正式上线。目前的产品形态是微博形式的，推出以后老师和同学普遍反映上手容易，也希望能加入更多方便学习交流的功能。 </p>
-<p>目前我们的技术开发团队 7 个人，涵盖数据库、Web 开发、Android、iOS 等多个方面，团队整体实力平均，同时希望各个方面都能再有 1-2 个新同学参与。 </p>
-<p>我在团队中主要负责前端这块，目前我们的前端 JS 框架是 SeaJS + Backbone 这样的组合，CSS 框架则是 Less。同时还应用了 jQuery/underscore/hogan 这些目前比较流行的库做开发。不需要太多考虑 IE6 下的兼容性，如果你喜欢前端这块的新技术，那这里的工作对于你来说会有一种“玩着就把钱挣了”的感觉。 </p>
-<p>待遇方面，前端研发工程师的待遇和其他研发工程师待遇相同，都是 18w-30w，正规五险一金、转正配一笔性感诱人的期权、餐补报销、免费可乐水果管饱、iMac 双显、帅哥靓妹协助解决单身问题什么都是妥妥的。 </p>
-<p>公司目前在东三环朝外 SOHO，如果你在五道口这则有同事的顺风车可搭。 </p>
-<h5 id="我希望未来一起并肩战斗的同学应该是：">我希望未来一起并肩战斗的同学应该是：</h5>
-<ul>
-<li>有信心扛起一整个网站，而不只是负责一小部分 feature 的开发 </li>
-<li>解决问题时不仅仅是霰弹枪一把而是愿意研究问题背后的原因 </li>
-<li>Google 资料/上栈爆网/混 Github 毫无压力 </li>
-<li>有无限的求知欲望和探索欲望，对于不整洁的代码有天然的愤怒感 </li>
-</ul>
-<h5 id="这样的同学，欢迎你来我们这里：">这样的同学，欢迎你来我们这里：</h5>
-<ul>
-<li>全职或每周 4 天以上的实习 </li>
-<li>负责一个超大型网站的 Web 开发 </li>
-<li>培养起一个小型技术团队 </li>
-<li>Being geek </li>
-</ul>
-<p>如果你是这样，或者你希望将来称为这样的工程师，欢迎通过以下方式联系我： </p>
-<ul>
-<li>微博 <a href="http://weibo.com/perfectworks/" target="_blank">@perfectworks</a></li>
-<li>邮箱 perfectworks#gmail.com </li>
-</ul>
-
-        <p>- FIN -</p>
-      
-    </div>
-    
-    <footer class="article-footer">
-      <a data-url="http://lostjs.com/2012/08/30/fenbi-recruit/" data-id="sw6ke9w04hpcbd34" class="article-share-link">分享</a>
-      
-      
-        <a href="http://lostjs.com/2012/08/30/fenbi-recruit/#comments" class="article-comment-link">评论</a>
-      
-      
-  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/招聘/">招聘</a></li></ul>
 
     </footer>
   </div>
@@ -453,7 +486,7 @@ console.log(Template.render(<span class="string">'hello'</span>, {name: <span cl
   <div class="widget-wrap">
     <h3 class="widget-title">标签</h3>
     <div class="widget">
-      <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/docker/">docker</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/git/">git</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/grunt/">grunt</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/hexo/">hexo</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/javascript/">javascript</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/mustache/">mustache</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/node/">node</a><span class="tag-list-count">5</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/vim/">vim</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/zsh/">zsh</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/招聘/">招聘</a><span class="tag-list-count">1</span></li></ul>
+      <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/docker/">docker</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/git/">git</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/grunt/">grunt</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/hexo/">hexo</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/javascript/">javascript</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/mustache/">mustache</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/node/">node</a><span class="tag-list-count">6</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/vim/">vim</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/zsh/">zsh</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/招聘/">招聘</a><span class="tag-list-count">1</span></li></ul>
     </div>
   </div>
 
@@ -463,7 +496,7 @@ console.log(Template.render(<span class="string">'hello'</span>, {name: <span cl
   <div class="widget-wrap">
     <h3 class="widget-title">归档</h3>
     <div class="widget">
-      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2014/04">四月 2014</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2014/02">二月 2014</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2014/01">一月 2014</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2013/10">十月 2013</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2013/07">七月 2013</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2012/12">十二月 2012</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2012/09">九月 2012</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2012/08">八月 2012</a><span class="archive-list-count">2</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2012/02">二月 2012</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2011/12">十二月 2011</a><span class="archive-list-count">1</span></li></ul>
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2014/04">四月 2014</a><span class="archive-list-count">5</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2014/02">二月 2014</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2014/01">一月 2014</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2013/10">十月 2013</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2013/07">七月 2013</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2012/12">十二月 2012</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2012/09">九月 2012</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2012/08">八月 2012</a><span class="archive-list-count">2</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2012/02">二月 2012</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2011/12">十二月 2011</a><span class="archive-list-count">1</span></li></ul>
     </div>
   </div>
 
@@ -474,6 +507,10 @@ console.log(Template.render(<span class="string">'hello'</span>, {name: <span cl
     <h3 class="widget-title">最新文章</h3>
     <div class="widget">
       <ul>
+        
+          <li>
+            <a href="/2014/04/24/router-in-express-4/">浅谈 Express 4.0 Router 模块</a>
+          </li>
         
           <li>
             <a href="/2014/04/24/upgrade-express-4/">Express 4.0 升级手记</a>
@@ -491,10 +528,6 @@ console.log(Template.render(<span class="string">'hello'</span>, {name: <span cl
             <a href="/2014/04/21/a-simple-promise-cache-by-lru-cache/">异步、promise 与缓存</a>
           </li>
         
-          <li>
-            <a href="/2014/02/26/docker-behind-gfw/">Mac 下使用代理连接 docker 镜像服务器</a>
-          </li>
-        
       </ul>
     </div>
   </div>
@@ -508,7 +541,7 @@ console.log(Template.render(<span class="string">'hello'</span>, {name: <span cl
   
   <div class="outer">
     <div id="footer-info" class="inner">
-      &copy; 2014 Ethan (pw) Zhang<br>
+      &copy; 2014 张宇辰 (pw)<br>
       Powered by <a href="http://zespia.tw/hexo/" target="_blank">Hexo</a>
     </div>
   </div>
