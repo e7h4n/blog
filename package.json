@@ -2,8 +2,11 @@
   "name": "hexo-site",
   "version": "2.5.3",
   "private": true,
+  "scripts": {
+      "minify": "hexo gm --cssSafe"
+  },
   "dependencies": {
     "hexo-generator-feed": "~0.1.0",
-    "hexo-minifer": "0.0.2"
+    "hexo-generator-minify": "^0.1.0"
   }
 }
