@@ -104,8 +104,9 @@ stylus:
 # Deployment
 ## Docs: http://hexo.io/docs/deployment.html
 deploy:
-  repo: git@github.com:perfectworks/perfectworks.github.com.git
-  type: github
+  type: git
+  repo:
+      gitcafe: git@gitcafe.com:perfectworks/perfectworks.git,gitcafe-pages
 
 feed:
     type: atom
