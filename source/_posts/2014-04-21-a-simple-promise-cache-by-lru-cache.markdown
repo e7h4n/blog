@@ -46,7 +46,7 @@ function cacheAsync(logical) {
 
         logical(function (err, result) {
             if (err) {
-                logical(err);
+                callback(err);
                 return;
             }
 
