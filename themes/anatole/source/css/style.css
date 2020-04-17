@@ -109,6 +109,7 @@ a:hover, a:active {
 
 /*animation ends*/
 .content {
+  background: #FFF;
   height: auto;
   float: right;
   width: 61.8%;
@@ -690,6 +691,7 @@ a.btn {
     width: 100%;
     z-index: 2;
     position: absolute;
+    background: #FFF;
   }
 
   .footer {
