@@ -1,11 +1,8 @@
 mixin make_post(item, is_detail)
 	.post.animated.fadeInDown
 		.post-title
-			h3
-				if is_detail
-					a= item.title
-				else
-					a(href= url_for(item.path))= item.title
+			h1
+				a(href= url_for(item.path))= item.title
 		if is_detail
 			.post-content!= item.content
 		else
@@ -60,7 +57,6 @@ mixin postList()
 					| </ul><div class="listing-title">
 					!= year
 					| </div><ul class="listing">
-			
 			.listing-item
 				.listing-post
 					a(href= url_for(item.path), title= item.title)= item.title
