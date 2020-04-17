@@ -8,7 +8,7 @@ mixin make_post(item, is_detail)
 		else
 			.post-content
 				- var summary = item.summary || item.content
-				p!= truncate(strip_html(summary), {length: 160})
+				p!= htmlTruncate(summary, 100, {    ellipsis: '...', excludes: ['img'], keepWhitespaces: true, reserveLastWord: true })
 		.post-footer: .meta
 			.info
 				i.fa.fa-sun-o
