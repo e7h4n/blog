@@ -235,10 +235,12 @@ a:hover, a:active {
   color: #4786D6;
 }
 
+.post-page {
+  max-width: 800px;
+}
 .post {
   background-color: #FFF;
   margin: 30px;
-  max-width: 760px;
 }
 .post .post-title h1 {
   font-size: 30px;
