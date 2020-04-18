@@ -5,6 +5,7 @@ tags: [zsh]
 
 像大部分 \*nix 用户，我之前用 bash 很多年，期间也有过小的不爽，但一直都忍过来，或者是说没想过这些不爽的地方能解决，比如 `cd` 到一个深目录时得哐哐猛敲 `<TAB>`。这么多年里我也尝试过其他 shell。比如 ksh/tcsh 以及今天要说的 zsh，但最终都没坚持下去，因为心中始终还是认为 bash 是最正统的 shell，不愿意去主动深入学习其他 shell。直到前几天逛 github，发现 [排名第 6 的开源项目 oh-my-zsh](https://github.com/popular/forked)，下来试用了一把，顿时觉得 bash 各种操作不爽到无法忍受。
 
+<!-- more -->
 
 ## 放弃 bash 的各种内牛满面的理由
 

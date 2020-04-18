@@ -11,6 +11,8 @@ console.log(Mustache.render(template, {name: "foo"})); // hello foo!
 console.log(Mustache.render(template, {name: "bar"})); // hello bar!
 ```
 
+<!-- more -->
+
 Mustache 在 render 一个模板时，首先会将这个模板编译成一个模板函数。比如上面例子里的 `hello {{ "{{name" }}}}` 模板，会被编译成一个模板函数：
 
 ``` javascript

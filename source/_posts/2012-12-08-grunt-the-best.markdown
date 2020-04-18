@@ -19,6 +19,8 @@ cat src/a.css src/b.css src/c.css > dst/main.css
 cssmin main.css
 ```
 
+<!-- more -->
+
 后来随着项目规模的逐渐增大，shell 脚本逐渐暴露出了很多问题，比如：
 
 

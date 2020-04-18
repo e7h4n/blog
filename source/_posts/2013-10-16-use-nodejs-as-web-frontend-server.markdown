@@ -5,6 +5,8 @@ tags: [node]
 
 前不久 NCZ 发表了新文章 [Node.js and the new web front-end]（[译文]），描述了用 node.js 做 Web 前端服务器的种种优势。NCZ 在文章中推荐了一套服务器模型(图片来源自[Node.js and the new web front-end])。
 
+<!-- more -->
+
 {% img http://www.nczonline.net/blog/wp-content/uploads/2013/10/nodejs2.png %}
 
 这个模型在传统的后台服务器前，增加了一层 node.js 实现的 Frontend Server 层。这种架构的最大好处是前后端开发人员的依赖分离，让后端开发人员不必再关心数据在页面间如何传递、用户数据获取是通过 Ajax 还是刷新页面等前端开发所涉及的方方面面，前端开发人员也不必再关心数据如何在数据库中存储等等后端问题。
@@ -101,7 +103,7 @@ var cookieRequest = function (userRequest, userResponse, url, callback) {
         headers: {}
     };
     options.headers.Cookie = userRequest.header('Cookie'); // 将用户的 Cookie 传递给后台服务器
-    
+
     request(options, function (error, response, body) {
         userResponse.setHeader('Cookie', response.headers.cookie);
         callback.apply(null, arguments);

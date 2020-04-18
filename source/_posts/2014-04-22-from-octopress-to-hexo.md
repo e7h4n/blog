@@ -7,6 +7,8 @@ tags: [hexo]
 
 和 octopress 类似，hexo 也是一个静态页面生成工具。它允许用 markdown 语法来写文章，并且生成并上传整个网站到 github。它和 octopress 有着完全一样的文章格式，所以整个迁移过程非常轻松。
 
+<!-- more -->
+
 ### 安装 hexo
 
 ```bash

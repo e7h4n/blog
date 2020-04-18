@@ -13,6 +13,8 @@ tags: [javascript]
     }, 100);
 ```
 
+<!-- more -->
+
 <blockquote>
     <div id="demo1">
         <button id="demo1Run">运行</button> <button id="demo1Stop">停止</button>

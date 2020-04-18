@@ -31,6 +31,8 @@ function readFile(callback) {
 
 上面的代码用 `fileContent` 变量做了一个简单的内存缓存，在 `readFile` 函数中，如果发现缓存中存在内容，则跳过文件读取操作。
 
+<!-- more -->
+
 这是个非常简单的缓存应用案例，我们可以将代码中的缓存逻辑抽出来，与业务逻辑分离，成为一个通用的缓存方法 `cacheAsync`:
 
 ```javascript

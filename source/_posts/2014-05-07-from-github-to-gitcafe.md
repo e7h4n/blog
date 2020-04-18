@@ -5,6 +5,8 @@ tags: hexo
 
 由于众所周知的原因，[github] 在国内的访问速度又慢又不稳定，所以[用 github 来托管 blog] 并不是很适合中国国情。所幸国内有 [gitcafe] 这一优质的代码托管服务，可以替代 github 来托管 blog。
 
+<!-- more -->
+
 使用 gitcafe 非常简单，用过 github 的同学上手肯定毫无压力。创建完 gitcafe 之后新建一个和用户名一样的仓库，例如我的就是 `https://gitcafe.com/perfectworks/perfectworks.git`。
 
 我用的 blog 程序是 [hexo]，部署到 gitcafe 上非常简单，只需要加上几行简单的配置就可以通过 `hexo deploy` 命令来部署:
