@@ -1,7 +1,454 @@
-<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="X-UA-Compatible" content="IE=edge"><meta name="author" content="张宇辰 (pw)"><title>张宇辰的博客</title><meta name="description" content="10 年程序员"><meta name="keywords"><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" name="viewport"><meta content="yes" name="apple-mobile-web-app-capable"><meta content="black" name="apple-mobile-web-app-status-bar-style"><meta content="telephone=no" name="format-detection"><meta name="renderer" content="webkit"><link rel="short icon" href="/images/favicon.png" type="image/x-icon"><link rel="stylesheet" href="/css/style.v1.css"><link rel="stylesheet" href="/css/blog_basic.css"><link rel="stylesheet" href="/css/font-awesome.min.css"><link rel="alternate" type="application/atom+xml" title="ATOM 1.0" href="/atom.xml"><meta name="generator" content="Hexo 4.2.0"></head><body><div class="sidebar"><div class="image-info">2019 年夏 @ 内蒙响沙湾</div><div class="logo-title"><div class="title"><img src="/images/logo@2x.png" style="width:127px;border-radius:127px"><h3 title="" style="margin-top: 0.5em"><a href="/">张宇辰的博客</a></h3><div class="description"><p>10 年程序员</p></div></div></div><ul class="social-links"></ul></div><div class="main"><div class="page-top animated fadeInDown"><div class="nav"><li><a class="current" href="/">首页</a></li><li><a href="/archives">归档</a></li></div><div class="information"><div class="back_btn"><li><a class="fa fa-chevron-left" onclick="window.history.go(-1)" style="display:none;"> </a></li></div></div></div><div class="autopagerize_page_element"><div class="content"><div class="post animated fadeInDown"><div class="post-title"><h1><a href="/2014/04/21/a-simple-promise-cache-by-lru-cache/">异步、promise 与缓存</a></h1></div><div class="post-content"><p><h2 id="异步操作缓存"><a href="#异步操作缓存" class="headerlink" title="异步操作缓存"></a>异步操作缓存</h2><p>在 Node 开发过程中要常常和异步调用打交道，例如发送 http 请求、读取文件内容等。有时我们需要将这些异步 I/O 操作的结果缓存下来，使得程序运行的速度更快，例如:</p>
-<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7...</span></pre></td></tr></table></figure></p></div><div class="post-footer"><div class="meta"><div class="info"><i class="fa fa-sun-o"></i><span class="date">2014-04-21</span><i class="fa fa-tag"></i><a class="tag" href="/tags/node/" title="node">node </a></div></div></div></div><div class="post animated fadeInDown"><div class="post-title"><h1><a href="/2014/02/26/docker-behind-gfw/">Mac 下使用代理连接 docker 镜像服务器</a></h1></div><div class="post-content"><p><p>Docker 是个非常牛逼的轻量级虚拟化解决方案，它可以将整个操作系统打成一个非常小的镜像，并且直接跑在宿主的 Linux Kernel 之上。然而在国内因为可恶的 GFW 存在，使用 docker ...</p></p></div><div class="post-footer"><div class="meta"><div class="info"><i class="fa fa-sun-o"></i><span class="date">2014-02-26</span><i class="fa fa-tag"></i><a class="tag" href="/tags/docker/" title="docker">docker </a></div></div></div></div><div class="post animated fadeInDown"><div class="post-title"><h1><a href="/2014/01/25/handle-exception-in-node/">Node 出现 uncaughtException 之后的优雅退出方案</a></h1></div><div class="post-content"><p><p>Node 的异步特性是它最大的魅力，但是在带来便利的同时也带来了不少麻烦和坑，错误捕获就是一个。由于 Node 的异步特性，导致我们无法使用 try/catch 来捕获回调函数中的异常，例如:</p>
-<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3...</span></pre></td></tr></table></figure></p></div><div class="post-footer"><div class="meta"><div class="info"><i class="fa fa-sun-o"></i><span class="date">2014-01-25</span><i class="fa fa-tag"></i><a class="tag" href="/tags/node/" title="node">node </a></div></div></div></div><div class="post animated fadeInDown"><div class="post-title"><h1><a href="/2013/10/16/use-nodejs-as-web-frontend-server/">用 node.js 做 Web 前端服务器的一些经验</a></h1></div><div class="post-content"><p><p>前不久 NCZ 发表了新文章 <a href="http://www.nczonline.net/blog/2013/10/07/node-js-and-the-new-web-front-end/" target="_blank" rel="noopener">Node.js and the new web front-end</a>（<a href="http://www.silverna.org/blog/?p=297" target="_blank" rel="noopener">译文</a>），描述了用 node.js 做 Web 前端服务器的种种优势。NCZ 在文章中推荐了一套服务器模...</p></p></div><div class="post-footer"><div class="meta"><div class="info"><i class="fa fa-sun-o"></i><span class="date">2013-10-16</span><i class="fa fa-tag"></i><a class="tag" href="/tags/node/" title="node">node </a></div></div></div></div><div class="post animated fadeInDown"><div class="post-title"><h1><a href="/2013/07/20/accurate-countdown-in-javascript/">setInterval 倒计时陷阱</a></h1></div><div class="post-content"><p><p>最近发现页面上的一个倒计时功能出现了比较大的误差，debug 之后发现误差是由于 <code>setInterval</code> 不能实现准确执行任务导致的，例如下面这个例子：</p>
-<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">var</span> now = +<span class="keyword">new</span> <span class="built_in">Date...</span></span></pre></td></tr></table></figure></p></div><div class="post-footer"><div class="meta"><div class="info"><i class="fa fa-sun-o"></i><span class="date">2013-07-20</span><i class="fa fa-tag"></i><a class="tag" href="/tags/javascript/" title="javascript">javascript </a></div></div></div></div><div class="post animated fadeInDown"><div class="post-title"><h1><a href="/2012/12/08/grunt-the-best/">Grunt -- 最好的前端构建框架</a></h1></div><div class="post-content"><p><p>每个前端开发工程师都会遇到前端文件打包、压缩的问题。</p>
-<h2 id="Shell-gt-Ant-gt-Jake"><a href="#Shell-gt-Ant-gt-Jake" class="headerlink" title="Shell -&gt; Ant -&gt; Jake"></a>Shell -&gt; Ant -&gt; Jake</h2><p>最开始，我是用 shell 脚本调用 yuicompressor、cssmin 来压缩文件，非...</p></p></div><div class="post-footer"><div class="meta"><div class="info"><i class="fa fa-sun-o"></i><span class="date">2012-12-08</span><i class="fa fa-tag"></i><a class="tag" href="/tags/grunt/" title="grunt">grunt </a></div></div></div></div><div class="post animated fadeInDown"><div class="post-title"><h1><a href="/2012/09/27/zsh/">使用 zsh 的九个理由</a></h1></div><div class="post-content"><p><p>像大部分 *nix 用户，我之前用 bash 很多年，期间也有过小的不爽，但一直都忍过来，或者是说没想过这些不爽的地方能解决，比如 <code>cd</code> 到一个深目录时得哐哐猛敲 <code>&lt;TAB&gt;</code>。这么多年里我...</p></p></div><div class="post-footer"><div class="meta"><div class="info"><i class="fa fa-sun-o"></i><span class="date">2012-09-27</span><i class="fa fa-tag"></i><a class="tag" href="/tags/zsh/" title="zsh">zsh </a></div></div></div></div><div class="post animated fadeInDown"><div class="post-title"><h1><a href="/2012/08/30/mustache-precompile-with-hogan/">Mustache.js/Hogan.js 模板预编译</a></h1></div><div class="post-content"><p><p><a href="https://github.com/janl/mustache.js" target="_blank" rel="noopener">mustache.js</a> 是<a href="http://fenbi.com" target="_blank" rel="noopener">粉笔网</a>用的一个开源前端模板引擎，无逻辑的设计，简单好用，性能也不错。</p>
-<figure class="highlight javascript"><figcaption><span>一个简单的 mustache.js 渲染例子 demo.js</span></figcaption><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">var</span> template = <span class="string">"hello...</span></span></pre></td></tr></table></figure></p></div><div class="post-footer"><div class="meta"><div class="info"><i class="fa fa-sun-o"></i><span class="date">2012-08-30</span><i class="fa fa-tag"></i><a class="tag" href="/tags/mustache/" title="mustache">mustache </a></div></div></div></div><div class="post animated fadeInDown"><div class="post-title"><h1><a href="/2012/08/30/fenbi-recruit/">粉笔网招聘开发工程师</a></h1></div><div class="post-content"><p><p><a href="http://fenbi.com" target="_blank" rel="noopener">粉笔网</a>是个学习社区，网易前高管离职创业。8 月 27 日正式上线。目前的产品形态是微博形式的，推出以后老师和同学普遍反映上手容易，也希望能加入更多方便学习交流的功能。 </p>
-<p>目前我们的技术开发团队 7 个...</p></p></div><div class="post-footer"><div class="meta"><div class="info"><i class="fa fa-sun-o"></i><span class="date">2012-08-30</span><i class="fa fa-tag"></i><a class="tag" href="/tags/招聘/" title="招聘">招聘 </a></div></div></div></div><div class="post animated fadeInDown"><div class="post-title"><h1><a href="/2012/02/03/use-pathogen-and-git-to-manage-vimfiles/">教程：使用 pathogen + git 管理 Vim 插件</a></h1></div><div class="post-content"><p><p>Vim 用了很多年，一开始我是把所有插件直接扔到 .vim 目录下。时间长了以后，.vim 下面有好多零碎的文件，分不清哪个属于哪个插件，删除和升级插件都很困难。相信很多 Vimer 也遇到了这个问题...</p></p></div><div class="post-footer"><div class="meta"><div class="info"><i class="fa fa-sun-o"></i><span class="date">2012-02-04</span><i class="fa fa-tag"></i><a class="tag" href="/tags/vim/" title="vim">vim </a></div></div></div></div><div class="pagination"><ul class="clearfix"><li class="pre pagbuttons"><a class="btn" role="navigation" href="/">上一页</a></li><li class="next pagbuttons"><a class="btn" role="navigation" href="/page/3/">下一页</a></li></ul></div></div></div></div></body></html>
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta http-equiv="Cache-Control" content="no-transform">
+  <meta http-equiv="Cache-Control" content="no-siteapp">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"zhangyc.pw","root":"/","scheme":"Mist","version":"7.8.0","exturl":false,"sidebar":{"position":"right","display":"remove","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="10 年程序员">
+<meta property="og:type" content="website">
+<meta property="og:title" content="张宇辰的博客">
+<meta property="og:url" content="https://zhangyc.pw/page/2/index.html">
+<meta property="og:site_name" content="张宇辰的博客">
+<meta property="og:description" content="10 年程序员">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:author" content="张宇辰 (pw)">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://zhangyc.pw/page/2/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : true,
+    isPost : false,
+    lang   : 'zh-cn'
+  };
+</script>
+
+  <title>张宇辰的博客</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">张宇辰的博客</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">10 年程序员</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>Archives</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+  <a href="https://github.com/perfectworks" class="github-corner" title="Follow me on GitHub" aria-label="Follow me on GitHub" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content index posts-expand">
+            
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-cn">
+    <link itemprop="mainEntityOfPage" href="https://zhangyc.pw/2019/01/17/ytk-web-app/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="张宇辰 (pw)">
+      <meta itemprop="description" content="10 年程序员">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="张宇辰的博客">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2019/01/17/ytk-web-app/" class="post-title-link" itemprop="url">斑马思维的 Hybrid 方案</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2019.01.17 10:52:00" itemprop="dateCreated datePublished" datetime="2019-01-17T10:52:00+08:00">2019.01.17</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2020.04.19 01:07:57" itemprop="dateModified" datetime="2020-04-19T01:07:57+08:00">2020.04.19</time>
+              </span>
+
+          
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="fa fa-comment-o"></i>
+      </span>
+      <span class="post-meta-item-text">Disqus: </span>
+    
+    <a title="disqus" href="/2019/01/17/ytk-web-app/#disqus_thread" itemprop="discussionUrl">
+      <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2019/01/17/ytk-web-app/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p>斑马的研发同学在过去一个月快速迭代出了一个 Hybrid 框架。Hybrid 并不是太新鲜的技术，就目前而言，ReactNative 和 Flutter 都是可选的方案。这篇文章记录了下我们当时 Hybrid 方案的思考过程。</p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2019/01/17/ytk-web-app/#more" rel="contents">
+                Read more &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-cn">
+    <link itemprop="mainEntityOfPage" href="https://zhangyc.pw/2014/06/22/0-second-reload-for-node-web-server/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="张宇辰 (pw)">
+      <meta itemprop="description" content="10 年程序员">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="张宇辰的博客">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2014/06/22/0-second-reload-for-node-web-server/" class="post-title-link" itemprop="url">平滑升级 Node Web 服务器</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2014.06.22 11:33:12" itemprop="dateCreated datePublished" datetime="2014-06-22T11:33:12+08:00">2014.06.22</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2020.04.19 01:07:57" itemprop="dateModified" datetime="2020-04-19T01:07:57+08:00">2020.04.19</time>
+              </span>
+
+          
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="fa fa-comment-o"></i>
+      </span>
+      <span class="post-meta-item-text">Disqus: </span>
+    
+    <a title="disqus" href="/2014/06/22/0-second-reload-for-node-web-server/#disqus_thread" itemprop="discussionUrl">
+      <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2014/06/22/0-second-reload-for-node-web-server/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p>用 Node 搭建一个 Web 服务是一件很轻松的事情，例如经典的 Hello World 例子，三行代码实现一个 Web 服务:</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">require</span>(<span class="string">'http'</span>).createServer(<span class="function"><span class="keyword">function</span> (<span class="params">req, res</span>) </span>&#123;</span><br><span class="line">    res.end(<span class="string">'Hello World'</span>);</span><br><span class="line">&#125;).listen(<span class="number">3000</span>);</span><br></pre></td></tr></table></figure>
+
+<p>但是，要做一个稳定可靠的线上 Web 服务，并不简单。例如<a href="http://lostjs.com/2014/01/25/handle-exception-in-node/" target="_blank" rel="noopener">异常处理</a>、日志、部署、服务更新等等。本文主要讨论 Node Web 服务的更新。</p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2014/06/22/0-second-reload-for-node-web-server/#more" rel="contents">
+                Read more &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+
+  
+  <nav class="pagination">
+    <a class="extend prev" rel="prev" href="/"><i class="fa fa-angle-left" aria-label="Previous page"></i></a><a class="page-number" href="/">1</a><span class="page-number current">2</span><a class="page-number" href="/page/3/">3</a><span class="space">&hellip;</span><a class="page-number" href="/page/10/">10</a><a class="extend next" rel="next" href="/page/3/"><i class="fa fa-angle-right" aria-label="Next page"></i></a>
+  </nav>
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">张宇辰 (pw)</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://mist.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a>
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+  <script defer src="/lib/three/three.min.js"></script>
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+<script>
+if (document.querySelectorAll('pre.mermaid').length) {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/mermaid@8/dist/mermaid.min.js', () => {
+    mermaid.initialize({
+      theme    : 'forest',
+      logLevel : 3,
+      flowchart: { curve     : 'linear' },
+      gantt    : { axisFormat: '%m/%d/%Y' },
+      sequence : { actorMargin: 50 }
+    });
+  }, window.mermaid);
+}
+</script>
+
+
+  
+
+  
+
+<script>
+  function loadCount() {
+    var d = document, s = d.createElement('script');
+    s.src = 'https://zhangyc-pw.disqus.com/count.js';
+    s.id = 'dsq-count-scr';
+    (d.head || d.body).appendChild(s);
+  }
+  // defer loading until the whole page loading is completed
+  window.addEventListener('load', loadCount, false);
+</script>
+
+</body>
+</html>
